@@ -4,8 +4,6 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
-## [0.2.0] - 2026-11-15
-
 ### Adicionado
 - Música de fundo: cada corte recebe uma faixa sorteada da biblioteca `data/music/`, normalizada,
   com fade e ducking (abaixa ~10 dB durante a fala, igual pra vídeos gravados alto ou baixo).
@@ -15,6 +13,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 - Editor de volume da música por corte: botões − / + no card e controle de 0–150% na edição.
 - Crédito da música (arquivo `.txt` ao lado da faixa) incluído automaticamente na descrição.
 - Migração automática do banco para colunas novas (mudanças aditivas).
+
+## [0.2.0] - 2026-11-15
 
 ### Adicionado
 - Interface web (`cortago serve`): enviar vídeos, acompanhar o progresso, assistir, aprovar,
