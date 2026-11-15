@@ -3,7 +3,7 @@
 import subprocess
 from pathlib import Path
 
-from cortago import config
+from cortago import config, hardware
 
 LAYOUTS: tuple[str, ...] = ("blur", "crop")
 
@@ -93,10 +93,7 @@ def render_clip(
         *audio_map,
         "-t",
         f"{duration:.3f}",
-        "-c:v",
-        config.VIDEO_ENCODER,
-        "-b:v",
-        config.VIDEO_BITRATE,
+        *hardware.encoder_args(hardware.video_encoder()),
         "-pix_fmt",
         "yuv420p",
         "-c:a",
@@ -108,7 +105,9 @@ def render_clip(
         str(out.resolve()),
     ]
     # Roda dentro da pasta do .ass pra não precisar escapar o caminho no filtro do FFmpeg.
-    subprocess.run(cmd, check=True, cwd=ass.parent, capture_output=True, text=True)
+    subprocess.run(
+        cmd, check=True, cwd=ass.parent, capture_output=True, text=True, encoding="utf-8", errors="replace"
+    )
 
 
 def has_audio(path: Path) -> bool:
@@ -128,6 +127,8 @@ def has_audio(path: Path) -> bool:
         check=True,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
     ).stdout
     return bool(out.strip())
 
@@ -138,6 +139,8 @@ def media_duration(path: Path) -> float:
         check=True,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
     ).stdout
     return float(out.strip())
 
@@ -178,6 +181,8 @@ def measure_loudness(path: Path, start: float, duration: float) -> float | None:
         check=True,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
     ).stderr
     return parse_integrated_loudness(out)
 

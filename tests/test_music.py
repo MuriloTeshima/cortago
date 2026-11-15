@@ -36,6 +36,12 @@ def test_offset_stays_inside_track():
 
 def test_credit_from_sidecar_txt():
     setup_library("a.mp3", "b.mp3")
-    (config.MUSIC_DIR / "a.txt").write_text("  Artista - Faixa  \n")
+    (config.MUSIC_DIR / "a.txt").write_text("  Artista - Faixa  \n", encoding="utf-8")
     assert music.credit("a.mp3") == "Artista - Faixa"
     assert music.credit("b.mp3") is None
+
+
+def test_credit_ignores_windows_bom():
+    setup_library("a.mp3")
+    (config.MUSIC_DIR / "a.txt").write_bytes("﻿Música por Fulano".encode())
+    assert music.credit("a.mp3") == "Música por Fulano"

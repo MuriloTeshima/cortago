@@ -9,10 +9,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
   (título, descrição, tags), contadores com os limites do YouTube, as opções a marcar à mão e aviso quando
   os créditos ainda são de arquivo local.
 - Configuração `CORTAGO_YT_CATEGORY`, `CORTAGO_YT_LANGUAGE` e `CORTAGO_YT_EXTRA_TAGS`.
+- **Multiplataforma (macOS, Windows, Linux):** a ferramenta detecta o computador e escolhe sozinha a
+  transcrição (MLX no Mac com chip Apple, faster-whisper em GPU NVIDIA ou CPU) e o encoder de vídeo
+  (VideoToolbox, NVENC, Quick Sync, AMF ou libx264).
+- `cortago doctor`: mostra o hardware detectado e o que está faltando (FFmpeg, libass, chave da API).
+- Instruções de instalação para Windows e Linux. CI roda nos três sistemas.
 - Prévia das músicas: player na edição do corte que toca a faixa escolhida antes de salvar, e página
   `/musicas` com todas as faixas da biblioteca (link na página inicial).
 
 ### Alterado
+- O yt-dlp passou a ser usado como biblioteca Python (instalado pelo `uv sync`), não como programa externo.
+- `CORTAGO_VIDEO_ENCODER` e `CORTAGO_WHISPER_MODEL` agora são automáticos por padrão.
 - O botão "Copiar texto" foi substituído pelo painel "Postar no YouTube". O `.txt` ao lado do vídeo continua igual.
 
 ## [0.3.0] - 2026-11-15

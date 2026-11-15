@@ -105,7 +105,7 @@ def _clip_transcript(job: Job, clip: Clip) -> str:
     cache = pipeline.job_dir(job) / "transcript.json"
     if not cache.exists():
         return ""
-    tr = transcribe.Transcript.model_validate_json(cache.read_text())
+    tr = transcribe.Transcript.model_validate_json(cache.read_text(encoding="utf-8"))
     return " ".join(w.text for w in tr.words if w.end > clip.start and w.start < clip.end)
 
 

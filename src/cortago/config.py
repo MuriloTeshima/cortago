@@ -12,11 +12,12 @@ JOBS_DIR = DATA_DIR / "jobs"
 CLAUDE_MODEL = os.getenv("CORTAGO_CLAUDE_MODEL", "claude-opus-5-5")
 CLAUDE_EFFORT = os.getenv("CORTAGO_CLAUDE_EFFORT", "medium")
 
-# large-v3-turbo: ótima precisão em PT/EN e rápido no Apple Silicon via MLX.
-WHISPER_MODEL = os.getenv("CORTAGO_WHISPER_MODEL", "mlx-community/whisper-large-v3-turbo")
-
-# Encoder de hardware do Apple Silicon. Troque por "libx264" se preferir qualidade/tamanho.
-VIDEO_ENCODER = os.getenv("CORTAGO_VIDEO_ENCODER", "h264_videotoolbox")
+# Transcrição e encoder são escolhidos automaticamente conforme o computador (ver hardware.py).
+# Deixe vazio para automático, ou force: CORTAGO_WHISPER_BACKEND=mlx|faster-whisper,
+# CORTAGO_WHISPER_MODEL=<modelo>, CORTAGO_VIDEO_ENCODER=libx264|h264_nvenc|h264_videotoolbox|...
+WHISPER_BACKEND = os.getenv("CORTAGO_WHISPER_BACKEND", "")
+WHISPER_MODEL = os.getenv("CORTAGO_WHISPER_MODEL", "")
+VIDEO_ENCODER = os.getenv("CORTAGO_VIDEO_ENCODER", "")
 VIDEO_BITRATE = os.getenv("CORTAGO_VIDEO_BITRATE", "8M")
 
 OUT_W, OUT_H = 1080, 1920

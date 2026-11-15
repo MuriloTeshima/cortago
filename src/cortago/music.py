@@ -45,7 +45,7 @@ def credit(track: str) -> str | None:
     txt = p.with_suffix(".txt")
     if not txt.exists():
         return None
-    return txt.read_text(encoding="utf-8").strip() or None
+    return txt.read_text(encoding="utf-8-sig").strip() or None  # -sig: ignora o BOM do Bloco de Notas
 
 
 def display_name(track: str) -> str:

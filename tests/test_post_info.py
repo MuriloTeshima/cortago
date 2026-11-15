@@ -55,7 +55,7 @@ def test_title_over_limit_is_flagged():
 def test_music_credit_in_description(monkeypatch):
     config.MUSIC_DIR.mkdir(parents=True, exist_ok=True)
     (config.MUSIC_DIR / "a.mp3").write_bytes(b"x")
-    (config.MUSIC_DIR / "a.txt").write_text("Faixa X por Fulano")
+    (config.MUSIC_DIR / "a.txt").write_text("Faixa X por Fulano", encoding="utf-8")
     clip, job = make(music_track="a.mp3")
     assert "Música: Faixa X por Fulano" in post_info.build(clip, job).description
 

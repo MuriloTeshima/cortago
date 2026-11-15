@@ -1,10 +1,15 @@
 """Transcrição local com timestamps por palavra (mlx-whisper, roda na GPU do M4)."""
 
+import functools
+import logging
+import subprocess
 from pathlib import Path
 
 from pydantic import BaseModel
 
-from cortago import config
+from cortago import hardware
+
+log = logging.getLogger("cortago.transcribe")
 
 
 class Word(BaseModel):
@@ -31,18 +36,23 @@ class Transcript(BaseModel):
 
 def transcribe(video: Path, cache: Path, language: str | None = None) -> Transcript:
     if cache.exists():
-        return Transcript.model_validate_json(cache.read_text())
+        return Transcript.model_validate_json(cache.read_text(encoding="utf-8"))
 
-    import mlx_whisper  # import tardio: carrega MLX só quando precisa
+    setup = hardware.whisper_setup()
+    if setup.backend == "mlx":
+        transcript = _transcribe_mlx(video, setup, language)
+    else:
+        transcript = _transcribe_faster_whisper(video, setup, language)
+    cache.write_text(transcript.model_dump_json(indent=1), encoding="utf-8")
+    return transcript
+
+
+def _transcribe_mlx(video: Path, setup: hardware.WhisperSetup, language: str | None) -> Transcript:
+    import mlx_whisper  # import tardio: só existe em Mac com chip Apple
 
     result = mlx_whisper.transcribe(
-        str(video),
-        path_or_hf_repo=config.WHISPER_MODEL,
-        word_timestamps=True,
-        language=language,
-        verbose=False,
+        str(video), path_or_hf_repo=setup.model, word_timestamps=True, language=language, verbose=False
     )
-
     segments = [
         Segment(
             start=s["start"],
@@ -56,9 +66,79 @@ def transcribe(video: Path, cache: Path, language: str | None = None) -> Transcr
         )
         for s in result["segments"]
     ]
-    transcript = Transcript(language=result.get("language", language or ""), segments=segments)
-    cache.write_text(transcript.model_dump_json(indent=1))
-    return transcript
+    return Transcript(language=result.get("language", language or ""), segments=segments)
+
+
+@functools.cache
+def _faster_whisper_model(model: str, device: str, compute_type: str):
+    from faster_whisper import WhisperModel
+
+    return WhisperModel(model, device=device, compute_type=compute_type)
+
+
+def _load_faster_whisper(setup: hardware.WhisperSetup):
+    try:
+        return _faster_whisper_model(setup.model, setup.device, setup.compute_type or "default")
+    except Exception:
+        if setup.device != "cuda":
+            raise
+        # Placa NVIDIA detectada, mas faltam bibliotecas CUDA/cuDNN: segue na CPU em vez de falhar.
+        log.warning("Não foi possível usar a GPU NVIDIA; transcrevendo na CPU (mais lento).", exc_info=True)
+        return _faster_whisper_model(setup.model, "cpu", "int8")
+
+
+SAMPLE_RATE = 16000  # o Whisper trabalha com áudio mono a 16 kHz
+
+
+def load_audio(video: Path):
+    """Extrai o áudio com o FFmpeg (o mesmo usado no render), em vez da PyAV do faster-whisper."""
+    import numpy as np
+
+    raw = subprocess.run(
+        [
+            "ffmpeg",
+            "-nostdin",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-i",
+            str(video),
+            "-vn",
+            "-ac",
+            "1",
+            "-ar",
+            str(SAMPLE_RATE),
+            "-f",
+            "s16le",
+            "-",
+        ],
+        check=True,
+        capture_output=True,
+    ).stdout
+    return np.frombuffer(raw, np.int16).astype(np.float32) / 32768.0
+
+
+def _transcribe_faster_whisper(video: Path, setup: hardware.WhisperSetup, language: str | None) -> Transcript:
+    model = _load_faster_whisper(setup)
+    segments_iter, info = model.transcribe(
+        load_audio(video), language=language, word_timestamps=True, vad_filter=True
+    )
+    return segments_from_faster_whisper(segments_iter, info.language or language or "")
+
+
+def segments_from_faster_whisper(segments_iter, language: str) -> Transcript:
+    segments = [
+        Segment(
+            start=s.start,
+            end=s.end,
+            text=s.text.strip(),
+            words=[
+                Word(text=w.word.strip(), start=w.start, end=w.end) for w in (s.words or []) if w.word.strip()
+            ],
+        )
+        for s in segments_iter
+    ]
+    return Transcript(language=language, segments=segments)
 
 
 def to_prompt_text(transcript: Transcript) -> str:

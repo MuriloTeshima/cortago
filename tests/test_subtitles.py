@@ -28,7 +28,7 @@ def test_write_ass_shifts_times_and_highlights(tmp_path):
     words = [w("antes", 1.0, 1.5), w("olha", 10.0, 10.4), w("isso", 10.5, 10.9)]
     out = tmp_path / "c.ass"
     write_ass(words, clip_start=10.0, clip_end=11.0, hook="gancho {x}", out=out)
-    text = out.read_text()
+    text = out.read_text(encoding="utf-8")
 
     assert "ANTES" not in text  # fora do corte
     assert "Hook,,0,0,0,,GANCHO X" in text  # chaves removidas, sem quebrar o ASS
@@ -56,6 +56,6 @@ def test_colors_come_from_config(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "HOOK_BOX_COLOR", "#300854")
     out = tmp_path / "c.ass"
     write_ass([w("olha", 0.0, 0.5)], clip_start=0, clip_end=1, hook="gancho", out=out)
-    text = out.read_text()
+    text = out.read_text(encoding="utf-8")
     assert r"{\c&H00953CE3&}OLHA" in text
     assert "&H00540830,&H00540830" in text  # caixa do gancho

@@ -4,11 +4,13 @@ Ferramenta **genérica**: não depende de nenhum canal específico. Nada de nome
 um canal no código ou nos docs deste repositório. O que é de cada canal entra por variáveis no `.env`
 (`CORTAGO_CHANNEL_CONTEXT`, `CORTAGO_HIGHLIGHT_COLOR`, `CORTAGO_HOOK_BOX_COLOR`, `CORTAGO_MUSIC_DIR`…).
 
-Pipeline que transforma vídeos longos em Shorts 9:16 legendados. Roda localmente em Mac Apple Silicon.
+Pipeline que transforma vídeos longos em Shorts 9:16 legendados. Roda localmente em macOS, Windows e Linux;
+`hardware.py` detecta o computador (MLX/VideoToolbox no Mac Apple, CUDA/NVENC com NVIDIA, CPU no resto).
 
 ## Comandos
 
 - `uv sync`: instala dependências
+- `uv run cortago doctor`: mostra hardware detectado e o que falta
 - `uv run cortago serve [--reload]`: interface web em http://127.0.0.1:8000
 - `uv run cortago run <url|arquivo>`: roda o pipeline no terminal
 - `uv run pytest -q`: testes
@@ -21,7 +23,10 @@ Pipeline que transforma vídeos longos em Shorts 9:16 legendados. Roda localment
 - Toda mudança visível ao usuário entra no `CHANGELOG.md` em `[Unreleased]`. Releases usam SemVer com tag `vX.Y.Z`.
 - Textos de interface, prompts e mensagens da CLI em português do Brasil.
 - Lógica nova vem com teste em `tests/`. Testes não podem depender de rede, da API do Claude nem de MLX (CI roda em Linux).
-- `mlx-whisper` só é importado dentro da função que usa (é dependência só de macOS).
+- `mlx-whisper` só é importado dentro da função que usa (dependência só de Mac com chip Apple).
+- Multiplataforma: sempre `encoding="utf-8"` ao ler/gravar texto e nos `subprocess` com `text=True`
+  (o padrão do Windows é cp1252). O faster-whisper recebe o áudio já decodificado pelo FFmpeg (`load_audio`).
+- A CI roda em Ubuntu, Windows e macOS. Testes não podem depender de GPU, FFmpeg ou do `.env` local.
 - Segredos ficam em `.env` (fora do git). Nunca commitar chaves.
 
 ## Arquitetura
