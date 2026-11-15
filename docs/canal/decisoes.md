@@ -3,7 +3,21 @@
 Decisões do canal, da mais recente para a mais antiga. Cada entrada traz o que foi decidido, por quê e
 o que foi descartado, pra ninguém (nem você daqui a 6 meses) precisar redescobrir o motivo.
 
-## 2026-11-15: Nome "Corte Gamer" e @CorteGamerTV
+## 2026-11-15: Rebrand para "Game Cuts" e @GameCutsBR
+
+**Decisão:** o canal passa a se chamar **Game Cuts**, com o @ **@GameCutsBR** (reserva: @GameCutsOficial).
+Substitui a decisão "Corte Gamer" logo abaixo.
+
+**Por quê:** as artes do canal (foto e banners, em `CorteGamer/`) foram criadas com o nome "GAME CUTS" e o
+visual synthwave de Vice City. Foi mais simples alinhar o nome às artes do que refazê-las.
+
+**@:** o @GameCuts pertence a outro canal "Game Cuts" com ~1,1 mil inscritos. @GameCutsTV e @GameCutsBrasil
+estão com canais pequenos. @GameCutsBR e @GameCutsOficial estavam livres.
+
+**Riscos conhecidos:** existe outro canal com o mesmo nome de exibição (o dono do @GameCuts). O ícone de
+"play" do logo lembra o do YouTube (ver [identidade.md](identidade.md#visual)).
+
+## 2026-11-15: Nome "Corte Gamer" e @CorteGamerTV _(substituída pela decisão acima)_
 
 **Decisão:** o canal se chama **Corte Gamer**, com o @ **@CorteGamerTV** (reserva: @CorteGamerOficial).
 

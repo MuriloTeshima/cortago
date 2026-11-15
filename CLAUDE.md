@@ -1,6 +1,6 @@
 # CortaGo
 
-Ferramenta do canal de YouTube **Corte Gamer** (@CorteGamerTV), de cortes de games em português.
+Ferramenta do canal de YouTube **Game Cuts** (@GameCutsBR), de cortes de games em português.
 Este repositório centraliza o código **e** as informações do canal (`docs/canal/`).
 
 Pipeline que transforma vídeos longos em Shorts 9:16 legendados. Roda localmente em Mac Apple Silicon.

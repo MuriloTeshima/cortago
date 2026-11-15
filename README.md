@@ -2,7 +2,7 @@
 
 Transforma um vídeo longo em Shorts 9:16 legendados, rodando localmente no Mac (Apple Silicon).
 
-Ferramenta do canal **Corte Gamer** (@CorteGamerTV). Tudo sobre o canal (identidade, criação, políticas,
+Ferramenta do canal **Game Cuts** (@GameCutsBR). Tudo sobre o canal (identidade, criação, políticas,
 estratégia e fluxo de produção) está em [docs/canal/](docs/canal/README.md).
 
 ```text

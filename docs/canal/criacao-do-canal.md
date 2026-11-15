@@ -13,9 +13,11 @@ Siga em ordem. Marque `[x]` conforme for fazendo.
 ## 2. Criar o canal
 
 - [ ] youtube.com → foto do perfil → **Criar um canal**
-- [ ] Nome: `Corte Gamer`
-- [ ] @: `CorteGamerTV` (se não estiver mais livre, use `CorteGamerOficial` e atualize [identidade.md](identidade.md))
-- [ ] Foto do canal e banner (tamanhos em [identidade.md](identidade.md#tamanhos-de-imagem))
+- [ ] Nome: `Game Cuts`
+- [ ] @: `GameCutsBR` (se não estiver mais livre, use `GameCutsOficial` e atualize [identidade.md](identidade.md))
+- [ ] Foto do canal: `CorteGamer/profileImg.png`
+- [ ] Banner: adaptar `CorteGamer/backImg2.png` (ou `backImg.png`) para 2560 × 1440 antes de enviar
+  (ver [identidade.md](identidade.md#arquivos-das-artes-cortegamer))
 - [ ] Descrição do canal ([identidade.md](identidade.md#descrição-do-canal-youtube))
 - [ ] E-mail de contato comercial (Personalização → Informações básicas)
 
@@ -58,8 +60,8 @@ Siga em ordem. Marque `[x]` conforme for fazendo.
 
 ## 5. Outras plataformas (mesmo dia)
 
-- [ ] TikTok: conta **@CorteGamerTV**, mesma foto e bio curta
-- [ ] Instagram: conta **@CorteGamerTV** (conta profissional/criador para ver as estatísticas)
+- [ ] TikTok: conta **@GameCutsBR**, mesma foto e bio curta
+- [ ] Instagram: conta **@GameCutsBR** (conta profissional/criador para ver as estatísticas)
 - [ ] Atualizar os links no YouTube (Personalização → Informações básicas → Links)
 
 ## 6. Integração com o CortaGo (quando for publicar direto pela ferramenta)

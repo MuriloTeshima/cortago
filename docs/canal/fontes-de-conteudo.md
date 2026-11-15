@@ -31,7 +31,7 @@ Por e-mail comercial do criador ou DM:
 ```text
 Oi, [nome]! Tudo bem?
 
-Sou do Corte Gamer (@CorteGamerTV), um canal novo de cortes de games no YouTube Shorts.
+Sou do Game Cuts (@GameCutsBR), um canal novo de cortes de games no YouTube Shorts.
 Curto muito o seu conteúdo e queria pedir autorização pra publicar cortes curtos dos seus vídeos/lives,
 com legenda e sempre com crédito e link pro seu canal na descrição.
 

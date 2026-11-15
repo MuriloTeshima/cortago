@@ -1,18 +1,19 @@
-# Corte Gamer: central do canal
+# Game Cuts: central do canal
 
-Tudo sobre o canal **Corte Gamer** fica aqui: identidade, criação, regras, estratégia e operação.
+Tudo sobre o canal **Game Cuts** fica aqui: identidade, criação, regras, estratégia e operação.
 A parte técnica (a ferramenta que gera os cortes) está no [README da raiz](../../README.md).
 
 ## Resumo
 
 | | |
 | --- | --- |
-| Nome | **Corte Gamer** |
-| @ (handle) | **@CorteGamerTV** (reserva: @CorteGamerOficial) |
+| Nome | **Game Cuts** |
+| @ (handle) | **@GameCutsBR** (reserva: @GameCutsOficial) |
 | Formato | Shorts verticais (até 3 min) com cortes de vídeos de games, legendados e com música de fundo |
 | Nicho | Games em geral. O lançamento de GTA 6 (19/11/2026) é a porta de entrada |
 | Idioma | Português do Brasil |
 | Plataformas | YouTube Shorts (principal), TikTok e Instagram Reels (mesmo @) |
+| Visual | synthwave / Vice City anos 80, magenta e roxo (artes em `CorteGamer/`) |
 | Ferramenta | CortaGo (este repositório) |
 
 ## Documentos

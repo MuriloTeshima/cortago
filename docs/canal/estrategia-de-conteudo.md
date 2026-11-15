@@ -3,7 +3,7 @@
 ## Posicionamento
 
 **"Os melhores momentos dos games em segundos."** O espectador não precisa assistir a uma live de 4 horas
-nem a um vídeo de 30 minutos: o Corte Gamer entrega o momento que importa, legendado e com contexto.
+nem a um vídeo de 30 minutos: o Game Cuts entrega o momento que importa, legendado e com contexto.
 
 ## Pilares
 

@@ -2,40 +2,52 @@
 
 ## Nome e @
 
-- **Nome:** Corte Gamer
-- **@ principal:** `@CorteGamerTV`, o mesmo no YouTube, TikTok e Instagram
-- **@ reserva:** `@CorteGamerOficial`
+- **Nome:** Game Cuts
+- **@ principal:** `@GameCutsBR`, o mesmo no YouTube, TikTok e Instagram
+- **@ reserva:** `@GameCutsOficial`
+- **Slogan:** Cortes • Gameplay • Momentos épicos (está no banner)
 
 Disponibilidade conferida no YouTube em 15/11/2026:
 
 | @ | Situação |
 | --- | --- |
-| @CorteGamer, @CorteGamerBR, @CortesGamer, @OCorteGamer | ocupados por canais pequenos e parados (1 vídeo, 0–4 inscritos) |
-| **@CorteGamerTV**, @CorteGamerOficial | livres |
+| @GameCuts | **ocupado** por um canal "Game Cuts" com ~1,1 mil inscritos |
+| @GameCutsTV, @GameCutsBrasil | ocupados por canais pequenos (≤ 5 inscritos) |
+| **@GameCutsBR**, @GameCutsOficial | livres |
 
-TikTok e Instagram ainda não foram conferidos. Crie o @ nas três plataformas no mesmo dia, pra
-ninguém pegar antes.
+TikTok e Instagram ainda não foram conferidos. Crie o @ nas três plataformas no mesmo dia.
 
-**Pontos fortes do nome:** fala exatamente o que o canal é e coincide com o que as pessoas buscam ("corte gamer").
-**Pontos de atenção:** é genérico. Existem outros canais pequenos com nome parecido, e é mais difícil
-registrar como marca. A diferenciação vem do visual e da consistência.
+**Pontos fortes do nome:** curto, sonoro e combina com as artes. "Cuts" é entendido pelo público gamer.
+**Pontos de atenção:** existe outro canal chamado "Game Cuts" (o dono do @GameCuts, ~1,1 mil inscritos).
+O "BR" no @ e o visual synthwave ajudam a diferenciar. Vale olhar o que esse canal publica antes de lançar.
 
 ## Descrição do canal (YouTube)
 
-> Os melhores momentos dos games em poucos segundos. Cortes de lives, trailers, gameplays e notícias,
-> com legenda e direto ao ponto. GTA 6, lançamentos, curiosidades e muito mais. Todo dia tem corte novo.
->
-> Créditos dos vídeos originais sempre na descrição de cada Short.
-> Contato comercial: [e-mail do canal]
+Limite de 1.000 caracteres. As primeiras linhas aparecem na busca, por isso concentram as palavras-chave.
+
+```text
+Os momentos mais épicos dos games em poucos segundos. 🎮✂️
+
+No Game Cuts você encontra cortes de lives, gameplays, trailers e notícias do mundo dos games: legendados, rápidos e direto ao ponto. GTA 6, lançamentos, curiosidades, bugs e jogadas absurdas. Se aconteceu nos games, tem corte aqui.
+
+📅 Shorts novos todos os dias
+🔔 Inscreva-se e ative o sininho pra não perder nenhum corte
+
+Os créditos dos vídeos originais estão sempre na descrição de cada Short. É criador de conteúdo e quer seus melhores momentos aqui? Manda mensagem!
+
+📩 Contato comercial: [e-mail do canal]
+```
 
 ## Bio curta (TikTok / Instagram, até 80 caracteres)
 
-> Os melhores momentos dos games em segundos 🎮 GTA 6 e muito mais
+```text
+Os momentos mais épicos dos games em segundos 🎮✂️ GTA 6 e muito mais
+```
 
 ## Palavras-chave do canal
 
-`cortes de games`, `corte gamer`, `gta 6`, `gta vi`, `games`, `jogos`, `lançamentos de games`,
-`notícias de games`, `momentos engraçados games`, `shorts games`
+`game cuts`, `cortes de games`, `cortes gamer`, `gta 6`, `gta vi`, `games`, `jogos`,
+`lançamentos de games`, `notícias de games`, `momentos épicos games`, `shorts games`
 
 ## Tom de voz
 
@@ -46,23 +58,44 @@ registrar como marca. A diferenciação vem do visual e da consistência.
 
 ## Visual
 
-As cores e fontes seguem o que o CortaGo já gera nos vídeos, pra tudo ficar com a mesma cara:
+Estética **synthwave / anos 80 em Vice City**: pôr do sol, palmeiras, skyline neon, carro clássico.
+Paleta extraída das artes (`CorteGamer/backImg.png`):
 
-| Elemento | Valor |
+| Papel | Cor |
 | --- | --- |
-| Cor de destaque | amarelo `#FFD400` (palavra falada na legenda, gancho) |
-| Fundo | preto / grafite `#0E0F13` |
-| Texto | branco `#FFFFFF` com contorno preto |
-| Fonte | Arial Black, em caixa alta, nas legendas e no gancho |
+| Destaque principal (magenta) | `#E33C95` |
+| Rosa intenso | `#AE1595` |
+| Roxo | `#7E34A1` |
+| Roxo escuro (fundos) | `#300854` |
+| Quase preto | `#140320` |
+| Creme (sol, detalhes) | `#F6D4B7` |
+| Texto do logo | branco `#FFFFFF` com contorno preto |
 
-Ideia de logo: "CORTE" em branco e "GAMER" em amarelo, ou um ícone de tesoura sobre um controle.
+As legendas que o CortaGo gera ainda usam o amarelo `#FFD400` como destaque. Trocar pro magenta da
+marca é um ajuste pequeno na ferramenta (pendente).
+
+### Arquivos das artes (`CorteGamer/`)
+
+| Arquivo | Tamanho | Uso | Situação |
+| --- | --- | --- | --- |
+| `profileImg.png` | 1254 × 1254 | foto do canal | ✅ ok (mínimo recomendado: 800 × 800) |
+| `backImg.png` | 1983 × 793 | banner (versão 1) | ⚠️ abaixo do mínimo do YouTube (2048 × 1152) e com proporção diferente de 16:9 |
+| `backImg2.png` | 1983 × 793 | banner (versão 2) | ⚠️ mesmo problema |
+
+**Banner:** o YouTube pede 2560 × 1440 px (16:9). Em todos os aparelhos aparece só a **área segura central
+de 1546 × 423 px**. Logo, texto e "Inscreva-se" precisam caber nessa faixa, senão são cortados no celular.
+As artes atuais precisam ser adaptadas pra esse formato antes do upload.
+
+**Logo:** o ícone de "play" rosa lembra o logo do YouTube. As diretrizes de marca do YouTube não permitem
+usar ou imitar o logo dele na identidade do canal. Vale trocar o ícone por um controle, que já aparece no
+banner 2, pra evitar problema.
 
 ### Tamanhos de imagem
 
 | Peça | Tamanho | Observação |
 | --- | --- | --- |
 | Foto do canal (avatar) | 800 × 800 px | aparece em círculo e pequena: precisa ser legível em 98 px |
-| Banner | 2560 × 1440 px | área segura (aparece em todo aparelho): 1546 × 423 px no centro |
+| Banner | 2560 × 1440 px | mínimo 2048 × 1152; área segura: 1546 × 423 px no centro |
 | Marca d'água | 150 × 150 px | opcional, botão de inscrever nos vídeos longos |
 
 Confira os tamanhos na ajuda do YouTube Studio ao enviar. Esta tabela segue a orientação usual do YouTube,
