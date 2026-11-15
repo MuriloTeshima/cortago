@@ -37,3 +37,9 @@ CHANNEL_CONTEXT = os.getenv(
 # Cor da palavra sendo falada na legenda e da caixa do gancho (#RRGGBB).
 HIGHLIGHT_COLOR = os.getenv("CORTAGO_HIGHLIGHT_COLOR", "#FFE500")
 HOOK_BOX_COLOR = os.getenv("CORTAGO_HOOK_BOX_COLOR", "#000000")
+
+# Campos que você marca à mão no YouTube Studio ao postar (aparecem no painel "Postar no YouTube").
+YT_CATEGORY = os.getenv("CORTAGO_YT_CATEGORY", "Jogos")
+YT_LANGUAGE = os.getenv("CORTAGO_YT_LANGUAGE", "Português (Brasil)")
+# Tags extras adicionadas a todo corte, separadas por vírgula (ex.: "games,cortes de games").
+YT_EXTRA_TAGS = os.getenv("CORTAGO_YT_EXTRA_TAGS", "")

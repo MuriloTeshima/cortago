@@ -36,6 +36,8 @@ Arquivos de cada job em `data/jobs/<id>/` (`source.*`, `transcript.json`, `clips
   default fixo). Renomear/remover coluna exige adotar Alembic. Faça backup de `data/cortago.db` antes de testar.
 - Música: `Clip.music_track` é `None` (sortear no próximo render), `""` (sem música) ou nome do arquivo em `MUSIC_DIR`.
   No formulário, "sem música" é o valor `__none__` porque o FastAPI trata campo vazio como ausente.
+- Campos de postagem (título, descrição, tags) saem de `post_info.build()`, usado pelo painel "Postar no
+  YouTube" e pelo `.txt` de cada corte. Limites do YouTube em `post_info.TITLE_LIMIT` etc.
 - Volume da música: `render.auto_music_volume()` usa o loudness medido do trecho (`measure_loudness`, ebur128)
   menos `MUSIC_GAP_DB`, limitado a -40…-20 LUFS, vezes `Clip.music_level` (% manual, 100 = automático).
 - IDs usam AUTOINCREMENT: não reaproveitar IDs evita que o navegador mostre vídeo antigo do cache.

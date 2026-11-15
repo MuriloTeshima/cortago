@@ -27,6 +27,10 @@ Cole a URL, acompanhe o processamento e revise os cortes: assistir, aprovar/desc
 gancho, descrição, hashtags e início/fim (re-renderiza sozinho), baixar o `.mp4` e copiar o texto pronto
 pro YouTube. "Escolher de novo" pede uma nova seleção ao Claude.
 
+Na hora de postar, abra **"Postar no YouTube"** no card do corte. Ele mostra o passo a passo do YouTube
+Studio com um botão de copiar para cada campo (título, descrição com créditos e hashtags, tags), contadores
+com os limites do YouTube e as opções que você marca à mão (categoria, idioma, "não é para crianças").
+
 ### Música de fundo
 
 Coloque faixas livres de direitos em `data/music/` (mp3, m4a, wav, ogg, flac). Uma boa fonte é a
@@ -55,6 +59,9 @@ A ferramenta é genérica. Tudo que é do canal fica no `.env`:
 | `CORTAGO_HOOK_BOX_COLOR` | `#000000` | cor da caixa do gancho no topo |
 | `CORTAGO_MUSIC_DIR` | `data/music` | pasta com as músicas de fundo do canal |
 | `CORTAGO_MUSIC_GAP_DB` | `12` | quantos dB a música fica abaixo do áudio do vídeo |
+| `CORTAGO_YT_CATEGORY` | `Jogos` | categoria indicada no painel "Postar no YouTube" |
+| `CORTAGO_YT_LANGUAGE` | `Português (Brasil)` | idioma indicado no painel |
+| `CORTAGO_YT_EXTRA_TAGS` | (vazio) | tags somadas às de cada corte, separadas por vírgula |
 
 ### Terminal
 

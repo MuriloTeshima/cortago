@@ -268,3 +268,29 @@ def test_card_shows_music_level_controls(client, done_job):
     assert "125%" in html
     assert "Música mais baixa" in html and "Música mais alta" in html
     assert 'name="music_level"' in html
+
+
+def test_post_panel_shows_youtube_fields(client, done_job):
+    _, clip = done_job
+    html = client.get(f"/clips/{clip.id}").text
+    assert "Postar no YouTube" in html
+    assert f'id="yt-title-{clip.id}" readonly value="Detalhe"' in html
+    assert "Créditos: Canal" in html
+    assert f'id="yt-tags-{clip.id}" readonly value="gta6"' in html
+    assert "Jogos" in html and "Português (Brasil)" in html
+    assert "/100" in html
+
+
+def test_post_panel_hidden_until_rendered_or_when_discarded(client, done_job):
+    _, clip = done_job
+    db.update_clip(clip.id, render_status=RenderStatus.PENDING)
+    assert "Postar no YouTube" not in client.get(f"/clips/{clip.id}").text
+    db.update_clip(clip.id, render_status=RenderStatus.DONE, status=ClipStatus.DISCARDED)
+    assert "Postar no YouTube" not in client.get(f"/clips/{clip.id}").text
+
+
+def test_post_panel_warns_about_local_file_credits(client, done_job):
+    job, clip = done_job  # done_job não tem URL: veio de arquivo
+    assert "troque \"Canal\" nos créditos" in client.get(f"/clips/{clip.id}").text
+    db.update_job(job.id, url="https://youtu.be/abc")
+    assert "nos créditos pelo criador" not in client.get(f"/clips/{clip.id}").text

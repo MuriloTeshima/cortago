@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import delete, select
 
-from cortago import config, db, music, pipeline, render, transcribe, worker
+from cortago import config, db, music, pipeline, post_info, render, transcribe, worker
 from cortago.db import Clip, ClipStatus, Job, RenderStatus
 
 HERE = Path(__file__).parent
@@ -49,6 +49,10 @@ templates.env.globals.update(
     STATUS_LABELS=STATUS_LABELS,
     LAYOUTS=render.LAYOUTS,
     clip_text=pipeline.clip_text,
+    post_info=post_info.build,
+    TITLE_LIMIT=post_info.TITLE_LIMIT,
+    DESCRIPTION_LIMIT=post_info.DESCRIPTION_LIMIT,
+    TAGS_LIMIT=post_info.TAGS_LIMIT,
     music_tracks=music.tracks,
     music_name=music.display_name,
     MUSIC_DIR=config.MUSIC_DIR,

@@ -4,6 +4,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Adicionado
+- Painel "Postar no YouTube" em cada corte: passo a passo do YouTube Studio com botão de copiar por campo
+  (título, descrição, tags), contadores com os limites do YouTube, as opções a marcar à mão e aviso quando
+  os créditos ainda são de arquivo local.
+- Configuração `CORTAGO_YT_CATEGORY`, `CORTAGO_YT_LANGUAGE` e `CORTAGO_YT_EXTRA_TAGS`.
+
+### Alterado
+- O botão "Copiar texto" foi substituído pelo painel "Postar no YouTube". O `.txt` ao lado do vídeo continua igual.
+
 ## [0.3.0] - 2026-11-15
 
 ### Adicionado
