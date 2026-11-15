@@ -294,3 +294,34 @@ def test_post_panel_warns_about_local_file_credits(client, done_job):
     assert 'troque "Canal" nos créditos' in client.get(f"/clips/{clip.id}").text
     db.update_job(job.id, url="https://youtu.be/abc")
     assert "nos créditos pelo criador" not in client.get(f"/clips/{clip.id}").text
+
+
+def test_music_preview_endpoint(client):
+    _library("Epic Trailer.mp3")
+    r = client.get("/music/Epic%20Trailer.mp3")
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "audio/mpeg"
+    assert r.content == b"audio"
+    assert client.get("/music/nao-existe.mp3").status_code == 404
+    assert client.get("/music/..%2Fcortago.db").status_code == 404
+
+
+def test_music_library_page(client):
+    from cortago import config
+
+    _library("trap_Beat.mp3")
+    (config.MUSIC_DIR / "trap_Beat.txt").write_text("Beat por Fulano")
+    html = client.get("/musicas").text
+    assert "trap Beat" in html
+    assert 'src="/music/trap_Beat.mp3"' in html
+    assert "crédito: Beat por Fulano" in html
+    assert '<a href="/musicas">1 faixa na biblioteca</a>' in client.get("/").text
+
+
+def test_edit_form_has_music_preview(client, done_job):
+    _library("a b.mp3")
+    _, clip = done_job
+    db.update_clip(clip.id, music_track="a b.mp3")
+    html = client.get(f"/clips/{clip.id}").text
+    assert f'data-music-preview="#preview-{clip.id}"' in html
+    assert 'src="/music/a%20b.mp3"' in html

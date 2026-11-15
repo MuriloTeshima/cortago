@@ -28,3 +28,27 @@ document.addEventListener("htmx:responseError", (event) => {
 });
 
 document.addEventListener("htmx:sendError", () => toast("Servidor fora do ar?", "error"));
+
+// Prévia da música escolhida na edição do corte.
+document.addEventListener("change", (event) => {
+  const select = event.target.closest("[data-music-preview]");
+  if (!select) return;
+  const audio = document.querySelector(select.dataset.musicPreview);
+  const option = select.selectedOptions[0];
+  const track = option && !option.disabled && select.value !== "__none__" ? select.value : null;
+  audio.pause();
+  if (track) {
+    audio.src = "/music/" + encodeURIComponent(track);
+    audio.hidden = false;
+    audio.play().catch(() => {});
+  } else {
+    audio.removeAttribute("src");
+    audio.hidden = true;
+  }
+});
+
+// Só uma música tocando por vez.
+document.addEventListener("play", (event) => {
+  if (event.target.tagName !== "AUDIO") return;
+  document.querySelectorAll("audio").forEach((a) => a !== event.target && a.pause());
+}, true);

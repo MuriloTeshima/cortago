@@ -1,5 +1,6 @@
 """Interface web: enviar vídeos, acompanhar o processamento e revisar os cortes."""
 
+import mimetypes
 import shutil
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
@@ -311,6 +312,24 @@ def clip_render(request: Request, clip_id: int):
     worker.submit_render(clip_id)
     clip, job = _get_clip(clip_id)
     return _clip_card(request, clip, job)
+
+
+@app.get("/musicas", response_class=HTMLResponse)
+def music_library(request: Request):
+    tracks = [{"file": t, "name": music.display_name(t), "credit": music.credit(t)} for t in music.tracks()]
+    return templates.TemplateResponse(
+        request, "musicas.html", {"tracks": tracks, "music_dir": config.MUSIC_DIR}
+    )
+
+
+@app.get("/music/{track}")
+def music_file(track: str):
+    """Serve uma faixa da biblioteca para prévia no navegador."""
+    path = music.path(track)
+    if path is None:
+        raise HTTPException(404, "Música não encontrada")
+    media_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+    return FileResponse(path, media_type=media_type)
 
 
 @app.get("/media/{job_id}/{clip_id}.mp4")

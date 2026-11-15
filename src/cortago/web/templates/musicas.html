@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Músicas · CortaGo{% endblock %}
+{% block content %}
+<p><a href="/" class="muted">← Vídeos</a></p>
+<section class="card">
+  <h1>Biblioteca de músicas</h1>
+  <p class="muted small">
+    {{ tracks | length }} faixa{{ "s" if tracks | length != 1 }} em <code>{{ music_dir }}</code>.
+    Cada corte sorteia uma; dá pra trocar na edição do corte.
+  </p>
+</section>
+
+{% if not tracks %}
+  <p class="muted">Nenhuma faixa ainda. Coloque arquivos de áudio livres de direitos na pasta acima.</p>
+{% endif %}
+
+<div class="tracks">
+  {% for t in tracks %}
+    <div class="track">
+      <div class="track-info">
+        <strong>{{ t.name }}</strong>
+        <span class="muted small">{{ t.file }}{% if t.credit %} · crédito: {{ t.credit }}{% endif %}</span>
+      </div>
+      <audio controls preload="none" src="/music/{{ t.file | urlencode }}"></audio>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}
