@@ -35,6 +35,8 @@ O prefixo do arquivo indica o clima. A ideia é, no futuro, o Claude escolher a 
 
 ## Níveis de mixagem
 
-Medidos em 15/11/2026: a música fica em torno de -26 LUFS nas pausas (igual entre faixas diferentes,
-graças à normalização) e abaixa ~10 dB quando há fala. Ajuste geral: `CORTAGO_MUSIC_VOLUME` no `.env`
-(padrão `0.3`).
+- Toda faixa é normalizada (-16 LUFS), então faixas diferentes soam no mesmo volume.
+- O volume é **relativo ao vídeo**: o CortaGo mede o áudio de cada trecho e deixa a música 12 dB abaixo
+  (`CORTAGO_MUSIC_GAP_DB` no `.env`). Durante a fala ela abaixa mais ~10 dB (ducking).
+- Se a música ainda sobressair num corte: botões **− / +** ao lado do nome da faixa no card, ou
+  "Volume da música" na edição (100% = automático).

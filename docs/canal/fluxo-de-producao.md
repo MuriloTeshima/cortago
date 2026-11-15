@@ -30,7 +30,8 @@ uv run cortago serve        # abre http://127.0.0.1:8000
 - [ ] Termina numa frase completa?
 - [ ] Legenda sem erro grosseiro nos nomes (personagens, jogos)?
 - [ ] Título verdadeiro e específico?
-- [ ] Música combina com o clima e não atrapalha a fala? Troque na edição se precisar.
+- [ ] Música combina com o clima e não atrapalha a fala? Se estiver alta, use **−** ao lado da faixa;
+      se não combinar, troque na edição.
 - [ ] **Créditos corretos** no texto (em arquivo local, trocar "(arquivo local)" pelo criador real)
 - [ ] Nada de leak, conteúdo +18 explícito ou ofensivo
 
