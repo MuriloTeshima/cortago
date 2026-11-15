@@ -291,6 +291,6 @@ def test_post_panel_hidden_until_rendered_or_when_discarded(client, done_job):
 
 def test_post_panel_warns_about_local_file_credits(client, done_job):
     job, clip = done_job  # done_job não tem URL: veio de arquivo
-    assert "troque \"Canal\" nos créditos" in client.get(f"/clips/{clip.id}").text
+    assert 'troque "Canal" nos créditos' in client.get(f"/clips/{clip.id}").text
     db.update_job(job.id, url="https://youtu.be/abc")
     assert "nos créditos pelo criador" not in client.get(f"/clips/{clip.id}").text
