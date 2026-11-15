@@ -140,3 +140,7 @@ Os dados ficam em `data/`: o banco `cortago.db` e uma pasta por job em `data/job
 - `highlights.py`: prompt + structured output do Claude, ajuste dos cortes às bordas das palavras
 - `subtitles.py`: legendas estilo Shorts (3 palavras, palavra atual em amarelo, gancho no topo)
 - `render.py`: filtros FFmpeg dos layouts e mixagem da música (loudnorm + sidechain ducking)
+
+## Licença
+
+[MIT](LICENSE).

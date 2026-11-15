@@ -3,8 +3,10 @@ name = "cortago"
 version = "0.3.0"
 description = "Gera Shorts automaticamente a partir de vídeos longos"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
-    { name = "Murilo Teshima", email = "muriloteshimalira@gmail.com" }
+    { name = "Murilo Teshima", email = "56098351+MuriloTeshima@users.noreply.github.com" }
 ]
 requires-python = ">=3.12"
 dependencies = [
