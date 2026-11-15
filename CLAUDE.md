@@ -1,5 +1,8 @@
 # CortaGo
 
+Ferramenta do canal de YouTube **Corte Gamer** (@CorteGamerTV), de cortes de games em português.
+Este repositório centraliza o código **e** as informações do canal (`docs/canal/`).
+
 Pipeline que transforma vídeos longos em Shorts 9:16 legendados. Roda localmente em Mac Apple Silicon.
 
 ## Comandos
@@ -35,3 +38,11 @@ Arquivos de cada job em `data/jobs/<id>/` (`source.*`, `transcript.json`, `clips
 - Volume da música: `render.auto_music_volume()` usa o loudness medido do trecho (`measure_loudness`, ebur128)
   menos `MUSIC_GAP_DB`, limitado a -40…-20 LUFS, vezes `Clip.music_level` (% manual, 100 = automático).
 - IDs usam AUTOINCREMENT: não reaproveitar IDs evita que o navegador mostre vídeo antigo do cache.
+
+## Documentação do canal (`docs/canal/`)
+
+- `docs/canal/README.md` é o índice. Decisões do canal (nome, regras, estratégia) vão em `docs/canal/decisoes.md`
+  com data, motivo e alternativas descartadas.
+- Números externos (requisitos do YouTube, cotas) sempre com a data em que foram conferidos e a fonte.
+- Nada de credenciais, códigos de recuperação ou dados pessoais de terceiros nos docs (só links para onde estão guardados).
+- Mudou a biblioteca de músicas? Atualize `docs/canal/musicas.md`.

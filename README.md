@@ -2,6 +2,9 @@
 
 Transforma um vídeo longo em Shorts 9:16 legendados, rodando localmente no Mac (Apple Silicon).
 
+Ferramenta do canal **Corte Gamer** (@CorteGamerTV). Tudo sobre o canal (identidade, criação, políticas,
+estratégia e fluxo de produção) está em [docs/canal/](docs/canal/README.md).
+
 ```text
 URL/arquivo → yt-dlp → mlx-whisper (timestamps por palavra) → Claude escolhe os cortes
             → legendas .ass animadas → FFmpeg (9:16, encoder de hardware) → clips/*.mp4 + *.txt
