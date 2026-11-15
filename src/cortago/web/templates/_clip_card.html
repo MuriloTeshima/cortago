@@ -115,7 +115,7 @@
         </div>
         {% set tracks = music_tracks() %}
         <label class="field"><span>Música de fundo</span>
-          <select name="music_track">
+          <select name="music_track" data-music-preview="#preview-{{ clip.id }}">
             <option value="{{ NO_MUSIC }}" {% if not clip.music_track %}selected{% endif %}>Sem música</option>
             {% for t in tracks %}
               <option value="{{ t }}" {% if t == clip.music_track %}selected{% endif %}>{{ music_name(t) }}</option>
@@ -124,6 +124,8 @@
               <option disabled>{{ music_name(clip.music_track) }} (removida da biblioteca)</option>
             {% endif %}
           </select>
+          <audio id="preview-{{ clip.id }}" class="music-preview" controls preload="none"
+                 {% if clip.music_track and clip.music_track in tracks %}src="/music/{{ clip.music_track | urlencode }}"{% else %}hidden{% endif %}></audio>
         </label>
         <label class="field"><span>Volume da música: <output>{{ clip.music_level }}</output>%
             <span class="muted">(100% = automático, abaixo do áudio do vídeo)</span></span>

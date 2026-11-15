@@ -9,6 +9,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
   (título, descrição, tags), contadores com os limites do YouTube, as opções a marcar à mão e aviso quando
   os créditos ainda são de arquivo local.
 - Configuração `CORTAGO_YT_CATEGORY`, `CORTAGO_YT_LANGUAGE` e `CORTAGO_YT_EXTRA_TAGS`.
+- Prévia das músicas: player na edição do corte que toca a faixa escolhida antes de salvar, e página
+  `/musicas` com todas as faixas da biblioteca (link na página inicial).
 
 ### Alterado
 - O botão "Copiar texto" foi substituído pelo painel "Postar no YouTube". O `.txt` ao lado do vídeo continua igual.

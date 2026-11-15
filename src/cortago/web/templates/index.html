@@ -37,7 +37,7 @@
       <input type="checkbox" name="music" value="true" {% if tracks %}checked{% endif %}>
       <span>Música de fundo
         <span class="muted small">
-          {% if tracks %}— {{ tracks | length }} faixa{{ "s" if tracks | length > 1 }} na biblioteca, sorteada por corte
+          {% if tracks %}— <a href="/musicas">{{ tracks | length }} faixa{{ "s" if tracks | length > 1 }} na biblioteca</a>, sorteada por corte
           {% else %}— biblioteca vazia: coloque faixas livres de direitos em <code>{{ MUSIC_DIR }}</code>{% endif %}
         </span>
       </span>

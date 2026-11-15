@@ -36,7 +36,8 @@ com os limites do YouTube e as opções que você marca à mão (categoria, idio
 Coloque faixas livres de direitos em `data/music/` (mp3, m4a, wav, ogg, flac). Uma boa fonte é a
 **Biblioteca de áudio do YouTube** (YouTube Studio → Biblioteca de áudio). Cada corte recebe uma faixa
 sorteada, começando num ponto aleatório, com fade e ducking: a música abaixa ~10 dB quando alguém fala e
-volta nas pausas. Dá pra trocar a faixa ou tirar a música na edição do corte.
+volta nas pausas. Dá pra trocar a faixa ou tirar a música na edição do corte; ao escolher outra faixa, ela já toca
+como prévia. Todas as faixas podem ser ouvidas em `/musicas` (link "N faixas na biblioteca" na página inicial).
 
 Se a faixa exige atribuição, crie um `.txt` com o mesmo nome (`Faixa.mp3` → `Faixa.txt`) contendo o
 crédito; ele entra automaticamente na descrição.
