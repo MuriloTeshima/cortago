@@ -4,6 +4,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-15
+
 ### Adicionado
 - Interface web (`cortago serve`): enviar vídeos, acompanhar o progresso, assistir, aprovar,
   descartar e editar cortes, baixar o vídeo e copiar o texto pronto pro YouTube.
@@ -23,3 +25,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 - Legendas estilo Shorts (palavra atual destacada) e gancho no topo.
 - Render 9:16 com FFmpeg nos layouts `blur` e `crop`, usando encoder de hardware.
 - Lint (ruff), testes (pytest) e CI no GitHub Actions.
+
+[Unreleased]: https://github.com/MuriloTeshima/cortago/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/MuriloTeshima/cortago/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/MuriloTeshima/cortago/releases/tag/v0.1.0
