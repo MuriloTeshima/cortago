@@ -65,7 +65,7 @@ def test_run_job_full(fakes):
     clips = db.job_clips(job.id)
     assert [c.title for c in clips] == ["A", "B"]
     assert all(c.render_status == RenderStatus.DONE and c.render_version == 1 for c in clips)
-    text = pipeline.clip_path(job, clips[0], "txt").read_text()
+    text = pipeline.clip_path(job, clips[0], "txt").read_text(encoding="utf-8")
     assert "Créditos: Canal — https://x" in text and "#gta6" in text
 
 
@@ -186,7 +186,9 @@ def test_music_credit_goes_to_text(fakes):
     job = pipeline.create_job("https://youtube.com/watch?v=abc")
     job = pipeline.run_job(job.id)
     clip = db.job_clips(job.id)[0]
-    assert "Música: Faixa X por Fulano (CC BY)" in pipeline.clip_path(job, clip, "txt").read_text()
+    assert "Música: Faixa X por Fulano (CC BY)" in pipeline.clip_path(job, clip, "txt").read_text(
+        encoding="utf-8"
+    )
 
 
 def test_music_volume_follows_video_loudness_and_level(fakes):

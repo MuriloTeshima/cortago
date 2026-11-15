@@ -310,7 +310,7 @@ def test_music_library_page(client):
     from cortago import config
 
     _library("trap_Beat.mp3")
-    (config.MUSIC_DIR / "trap_Beat.txt").write_text("Beat por Fulano")
+    (config.MUSIC_DIR / "trap_Beat.txt").write_text("Beat por Fulano", encoding="utf-8")
     html = client.get("/musicas").text
     assert "trap Beat" in html
     assert 'src="/music/trap_Beat.mp3"' in html
