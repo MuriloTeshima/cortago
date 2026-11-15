@@ -9,7 +9,7 @@ from pathlib import Path
 
 from sqlmodel import delete
 
-from cortago import config, db, download, highlights, music, render, subtitles, transcribe
+from cortago import config, db, download, highlights, music, post_info, render, subtitles, transcribe
 from cortago.db import Clip, ClipStatus, Job, JobStatus, RenderStatus
 
 Log = Callable[[str], None]
@@ -28,13 +28,9 @@ def clip_path(job: Job, clip: Clip, ext: str = "mp4") -> Path:
 
 
 def clip_text(clip: Clip, job: Job) -> str:
-    """Título, descrição, créditos e hashtags prontos pra colar no YouTube."""
-    credit = f"Créditos: {job.channel}" + (f" — {job.url}" if job.url else "")
-    music_credit = music.credit(clip.music_track) if clip.music_track else None
-    if music_credit:
-        credit += f"\nMúsica: {music_credit}"
-    tags = " ".join(f"#{t.lstrip('#')}" for t in clip.hashtags)
-    return f"{clip.title}\n\n{clip.description}\n\n{credit}\n\n{tags}\n"
+    """Título + descrição (com créditos e hashtags) num texto só, salvo no .txt ao lado do vídeo."""
+    info = post_info.build(clip, job)
+    return f"{info.title}\n\n{info.description}\n"
 
 
 def write_clip_text(job: Job, clip: Clip) -> None:

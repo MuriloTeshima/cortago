@@ -11,7 +11,10 @@ document.addEventListener("click", async (event) => {
   if (!button) return;
   const source = document.querySelector(button.dataset.copy);
   await navigator.clipboard.writeText(source.value);
-  toast("Texto copiado");
+  toast(button.dataset.copyLabel || "Texto copiado");
+  const original = button.textContent;
+  button.textContent = "Copiado ✓";
+  setTimeout(() => (button.textContent = original), 1500);
 });
 
 document.addEventListener("htmx:responseError", (event) => {

@@ -189,6 +189,17 @@ details { border-top: 1px solid var(--border); padding-top: 0.6rem; }
 summary { cursor: pointer; color: var(--muted); font-size: 0.9rem; }
 .edit { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.75rem; }
 .edit .btn { align-self: flex-start; }
+.post-panel summary { color: var(--accent); font-weight: 600; }
+.post-steps { margin: 0.75rem 0 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.7rem; font-size: 0.88rem; }
+.post-steps li::marker { color: var(--muted); }
+.copy-field { display: flex; flex-direction: column; gap: 0.35rem; }
+.copy-head { display: flex; align-items: center; gap: 0.5rem; }
+.copy-head > span:first-child { flex: 1; font-weight: 600; }
+.copy-field input, .copy-field textarea { font-size: 0.85rem; resize: vertical; }
+.warn { color: var(--danger); margin: 0; }
+.counter { color: var(--muted); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+.counter.over { color: var(--danger); font-weight: 700; }
+.btn.small { padding: 0.2rem 0.6rem; font-size: 0.8rem; }
 .transcript { font-size: 0.88rem; color: var(--muted); margin-top: 0.5rem !important; }
 
 #toast {

@@ -16,5 +16,8 @@ def isolated(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "HIGHLIGHT_COLOR", "#FFE500")
     monkeypatch.setattr(config, "HOOK_BOX_COLOR", "#000000")
     monkeypatch.setattr(config, "MUSIC_GAP_DB", 12.0)
+    monkeypatch.setattr(config, "YT_CATEGORY", "Jogos")
+    monkeypatch.setattr(config, "YT_LANGUAGE", "Português (Brasil)")
+    monkeypatch.setattr(config, "YT_EXTRA_TAGS", "")
     db.use_engine(create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool))
     yield
