@@ -17,15 +17,27 @@ cp .env.example .env   # coloque sua ANTHROPIC_API_KEY
 
 ## Uso
 
+### Interface web
+
+```bash
+uv run cortago serve        # abre em http://127.0.0.1:8000
+```
+
+Cole a URL, acompanhe o processamento e revise os cortes: assistir, aprovar/descartar, editar título,
+gancho, descrição, hashtags e início/fim (re-renderiza sozinho), baixar o `.mp4` e copiar o texto pronto
+pro YouTube. "Escolher de novo" pede uma nova seleção ao Claude.
+
+### Terminal
+
 ```bash
 uv run cortago run "https://www.youtube.com/watch?v=..." -n 5
 uv run cortago run ~/Downloads/live.mp4 --layout crop --lang pt
 ```
 
-Saída em `data/jobs/<id>/clips/`: um `.mp4` por corte e um `.txt` com título, descrição, créditos e hashtags.
+Jobs criados pelo terminal também aparecem na interface.
 
-Cada etapa fica salva em cache (`source.mp4`, `transcript.json`, `clips.json`). Rodar de novo só re-renderiza.
-Use `--reselect` pra pedir uma nova seleção ao Claude, ou edite `clips.json` à mão pra ajustar início/fim.
+Os dados ficam em `data/`: o banco `cortago.db` e uma pasta por job em `data/jobs/<id>/` com `source.mp4`,
+`transcript.json` e `clips/` (um `.mp4` e um `.txt` por corte). Etapas já feitas são reaproveitadas.
 
 | Opção | Padrão | Descrição |
 | --- | --- | --- |
@@ -36,6 +48,10 @@ Use `--reselect` pra pedir uma nova seleção ao Claude, ou edite `clips.json` �
 
 ## Módulos
 
+- `db.py`: modelos `Job` e `Clip` (SQLite via SQLModel)
+- `pipeline.py`: orquestra as etapas e grava o progresso no banco
+- `worker.py`: fila em segundo plano da interface web (uma tarefa por vez)
+- `web/`: FastAPI + templates Jinja/HTMX
 - `download.py`: yt-dlp ou arquivo local
 - `transcribe.py`: mlx-whisper large-v3-turbo
 - `highlights.py`: prompt + structured output do Claude, ajuste dos cortes às bordas das palavras

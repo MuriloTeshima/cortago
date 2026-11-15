@@ -1,0 +1,72 @@
+{% set busy = clip.render_status in ("pending", "rendering") and clip.status != "discarded" %}
+<article id="clip-{{ clip.id }}" class="clip status-{{ clip.status }}"
+  {% if busy and not job.status.running %}hx-get="/clips/{{ clip.id }}" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+
+  <div class="player">
+    {% if clip.render_status == "done" %}
+      <video controls preload="metadata" src="/media/{{ job.id }}/{{ clip.id }}.mp4?v={{ clip.render_version }}"></video>
+    {% elif clip.render_status == "error" %}
+      <div class="placeholder error">
+        <p>Falha ao renderizar</p>
+        <code>{{ clip.render_error }}</code>
+        <button class="btn" hx-post="/clips/{{ clip.id }}/render" hx-target="#clip-{{ clip.id }}" hx-swap="outerHTML">Tentar de novo</button>
+      </div>
+    {% elif clip.status == "discarded" %}
+      <div class="placeholder"><p>Descartado</p></div>
+    {% else %}
+      <div class="placeholder"><i class="spinner"></i><p>{{ "Renderizando" if clip.render_status == "rendering" else "Na fila" }}</p></div>
+    {% endif %}
+  </div>
+
+  <div class="clip-body">
+    <div class="clip-meta">
+      <span class="score" title="Potencial segundo o Claude">{{ clip.score }}</span>
+      <span class="muted small">#{{ clip.position }} · {{ clip.start | time }}–{{ clip.end | time }} · {{ "%.0f" | format(clip.duration) }}s</span>
+      {% if clip.status == "approved" %}<span class="badge status-done">Aprovado</span>{% endif %}
+    </div>
+    <h3>{{ clip.title }}</h3>
+    <p class="muted small">{{ clip.reason }}</p>
+
+    <div class="actions">
+      {% if clip.status != "approved" %}
+        <button class="btn primary" hx-post="/clips/{{ clip.id }}/status" hx-vals='{"status": "approved"}'
+                hx-target="#clip-{{ clip.id }}" hx-swap="outerHTML">Aprovar</button>
+      {% endif %}
+      {% if clip.status != "discarded" %}
+        <button class="btn" hx-post="/clips/{{ clip.id }}/status" hx-vals='{"status": "discarded"}'
+                hx-target="#clip-{{ clip.id }}" hx-swap="outerHTML">Descartar</button>
+      {% else %}
+        <button class="btn" hx-post="/clips/{{ clip.id }}/status" hx-vals='{"status": "suggested"}'
+                hx-target="#clip-{{ clip.id }}" hx-swap="outerHTML">Restaurar</button>
+      {% endif %}
+      {% if clip.render_status == "done" %}
+        <a class="btn" href="/media/{{ job.id }}/{{ clip.id }}.mp4?download=true">Baixar</a>
+        <button class="btn" data-copy="#text-{{ clip.id }}">Copiar texto</button>
+      {% endif %}
+    </div>
+    <textarea id="text-{{ clip.id }}" class="hidden" readonly>{{ clip_text(clip, job) }}</textarea>
+
+    <details>
+      <summary>Editar</summary>
+      <form hx-post="/clips/{{ clip.id }}" hx-target="#clip-{{ clip.id }}" hx-swap="outerHTML" class="edit">
+        <label class="field"><span>Título</span><input name="title" value="{{ clip.title }}" maxlength="100"></label>
+        <label class="field"><span>Gancho na tela</span><input name="hook" value="{{ clip.hook }}" maxlength="60"></label>
+        <label class="field"><span>Descrição</span><textarea name="description" rows="2">{{ clip.description }}</textarea></label>
+        <label class="field"><span>Hashtags</span><input name="hashtags" value="{{ clip.hashtags | join(' ') }}"></label>
+        <div class="row">
+          <label class="field"><span>Início (s)</span><input type="number" step="0.1" min="0" name="start" value="{{ '%.1f' | format(clip.start) }}"></label>
+          <label class="field"><span>Fim (s)</span><input type="number" step="0.1" min="0" name="end" value="{{ '%.1f' | format(clip.end) }}"></label>
+        </div>
+        <p class="muted small">Mudar início, fim ou gancho renderiza o vídeo de novo.</p>
+        <button class="btn primary" type="submit">Salvar</button>
+      </form>
+    </details>
+
+    {% if transcript %}
+      <details>
+        <summary>Transcrição do trecho</summary>
+        <p class="transcript">{{ transcript }}</p>
+      </details>
+    {% endif %}
+  </div>
+</article>

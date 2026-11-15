@@ -4,6 +4,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Adicionado
+- Interface web (`cortago serve`): enviar vídeos, acompanhar o progresso, assistir, aprovar,
+  descartar e editar cortes, baixar o vídeo e copiar o texto pronto pro YouTube.
+- Banco SQLite com jobs e cortes, compartilhado entre CLI e interface.
+- Fila em segundo plano que retoma o processamento interrompido quando o servidor reinicia.
+
+### Alterado
+- A CLI passou a usar o mesmo pipeline e banco da interface. Saída agora em `data/jobs/<id>/clips/`.
+- Removida a opção `--reselect` da CLI (use "Escolher de novo" na interface).
+
 ## [0.1.0] - 2026-11-14
 
 ### Adicionado
