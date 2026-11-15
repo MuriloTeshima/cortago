@@ -27,3 +27,13 @@ MUSIC_DIR = Path(os.getenv("CORTAGO_MUSIC_DIR", DATA_DIR / "music"))
 # Quantos dB a música fica abaixo do áudio do vídeo (medido em cada corte). Maior = música mais baixa.
 # Durante a fala ela abaixa mais ~10 dB sozinha (ducking). Ajuste fino por corte é feito na interface.
 MUSIC_GAP_DB = float(os.getenv("CORTAGO_MUSIC_GAP_DB", "12"))
+
+# --- Personalização por canal (a ferramenta é genérica; cada canal ajusta no seu .env) ---
+
+# Quem é o canal, em uma frase. Vai no prompt do Claude e orienta a escolha dos cortes.
+CHANNEL_CONTEXT = os.getenv(
+    "CORTAGO_CHANNEL_CONTEXT", "um canal brasileiro de cortes de games no YouTube Shorts"
+)
+# Cor da palavra sendo falada na legenda e da caixa do gancho (#RRGGBB).
+HIGHLIGHT_COLOR = os.getenv("CORTAGO_HIGHLIGHT_COLOR", "#FFE500")
+HOOK_BOX_COLOR = os.getenv("CORTAGO_HOOK_BOX_COLOR", "#000000")

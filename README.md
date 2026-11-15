@@ -2,9 +2,6 @@
 
 Transforma um vídeo longo em Shorts 9:16 legendados, rodando localmente no Mac (Apple Silicon).
 
-Ferramenta do canal **Corte Gamer** (@CorteGamerTV). Tudo sobre o canal (identidade, criação, políticas,
-estratégia e fluxo de produção) está em [docs/canal/](docs/canal/README.md).
-
 ```text
 URL/arquivo → yt-dlp → mlx-whisper (timestamps por palavra) → Claude escolhe os cortes
             → legendas .ass animadas → FFmpeg (9:16, encoder de hardware) → clips/*.mp4 + *.txt
@@ -46,6 +43,18 @@ Se ainda assim a música sobressair num corte, use os botões **− / +** ao lad
 (passos de 25%) ou o controle "Volume da música" na edição (0–150%, 100% = automático).
 
 > Não use música comercial: gera claim no Content ID e pode desmonetizar ou derrubar o vídeo.
+
+### Personalizar para o seu canal
+
+A ferramenta é genérica. Tudo que é do canal fica no `.env`:
+
+| Variável | Padrão | Para quê |
+| --- | --- | --- |
+| `CORTAGO_CHANNEL_CONTEXT` | `um canal brasileiro de cortes de games no YouTube Shorts` | quem é o canal, em uma frase; orienta o Claude na escolha dos cortes |
+| `CORTAGO_HIGHLIGHT_COLOR` | `#FFE500` | cor da palavra sendo falada na legenda |
+| `CORTAGO_HOOK_BOX_COLOR` | `#000000` | cor da caixa do gancho no topo |
+| `CORTAGO_MUSIC_DIR` | `data/music` | pasta com as músicas de fundo do canal |
+| `CORTAGO_MUSIC_GAP_DB` | `12` | quantos dB a música fica abaixo do áudio do vídeo |
 
 ### Terminal
 

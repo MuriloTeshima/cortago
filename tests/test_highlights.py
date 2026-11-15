@@ -1,4 +1,5 @@
-from cortago.highlights import ClipSuggestion, _snap_to_words
+from cortago import config
+from cortago.highlights import ClipSuggestion, _snap_to_words, system_prompt
 from cortago.transcribe import Segment, Transcript, Word
 
 
@@ -26,3 +27,11 @@ def test_snap_never_negative():
 def test_snap_without_words_keeps_clip():
     original = clip(100.0, 120.0)
     assert _snap_to_words(original, make_transcript()) == original
+
+
+def test_system_prompt_uses_channel_context(monkeypatch):
+    monkeypatch.setattr(config, "CHANNEL_CONTEXT", "um canal de cortes de podcasts de tecnologia.")
+    prompt = system_prompt(20, 60)
+    assert prompt.startswith("Você é editor de vídeos para um canal de cortes de podcasts de tecnologia.")
+    assert "entre 20 e 60 segundos" in prompt
+    assert "GTA" not in prompt

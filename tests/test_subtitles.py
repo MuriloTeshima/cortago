@@ -1,4 +1,5 @@
-from cortago.subtitles import _chunks, _ts, write_ass
+from cortago import config
+from cortago.subtitles import _chunks, _ts, ass_color, write_ass
 from cortago.transcribe import Word
 
 
@@ -36,3 +37,25 @@ def test_write_ass_shifts_times_and_highlights(tmp_path):
     assert dialogues[0].startswith("Dialogue: 0,0:00:00.00,0:00:00.50,")
     assert r"{\c&H0000E5FF&}OLHA" in dialogues[0]
     assert r"{\c&H0000E5FF&}ISSO" in dialogues[1]
+
+
+def test_ass_color_converts_rgb_to_bgr():
+    assert ass_color("#E33C95") == "&H00953CE3"
+    assert ass_color("FFD400", alpha=0x80) == "&H8000D4FF"
+
+
+def test_ass_color_rejects_invalid():
+    import pytest
+
+    with pytest.raises(ValueError):
+        ass_color("#FFF")
+
+
+def test_colors_come_from_config(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "HIGHLIGHT_COLOR", "#E33C95")
+    monkeypatch.setattr(config, "HOOK_BOX_COLOR", "#300854")
+    out = tmp_path / "c.ass"
+    write_ass([w("olha", 0.0, 0.5)], clip_start=0, clip_end=1, hook="gancho", out=out)
+    text = out.read_text()
+    assert r"{\c&H00953CE3&}OLHA" in text
+    assert "&H00540830,&H00540830" in text  # caixa do gancho

@@ -15,14 +15,26 @@ ScaledBorderAndShadow: yes
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Caption,Arial Black,78,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,6,2,2,80,80,{caption_margin},1
-Style: Hook,Arial Black,72,&H00FFFFFF,&H00FFFFFF,&H00000000,&HC0000000,-1,0,0,0,100,100,0,0,3,18,0,8,80,80,{hook_margin},1
+Style: Hook,Arial Black,72,&H00FFFFFF,&H00FFFFFF,{hook_box},{hook_box},-1,0,0,0,100,100,0,0,3,18,0,8,80,80,{hook_margin},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 
-HIGHLIGHT = r"{\c&H0000E5FF&}"  # amarelo (formato BGR do ASS)
 RESET = r"{\c&H00FFFFFF&}"
+
+
+def ass_color(hex_rgb: str, alpha: int = 0) -> str:
+    """'#RRGGBB' → '&HAABBGGRR' (o ASS usa BGR e alpha invertido: 00 = opaco)."""
+    h = hex_rgb.strip().lstrip("#")
+    if len(h) != 6:
+        raise ValueError(f"cor inválida: {hex_rgb!r} (use #RRGGBB)")
+    r, g, b = (int(h[i : i + 2], 16) for i in (0, 2, 4))
+    return f"&H{alpha:02X}{b:02X}{g:02X}{r:02X}"
+
+
+def _highlight() -> str:
+    return "{\\c" + ass_color(config.HIGHLIGHT_COLOR) + "&}"
 
 
 def _ts(seconds: float) -> str:
@@ -60,7 +72,16 @@ def write_ass(
     hook_seconds: float = 3.0,
 ) -> None:
     w, h = config.OUT_W, config.OUT_H
-    lines = [HEADER.format(w=w, h=h, caption_margin=int(h * 0.28), hook_margin=int(h * 0.12))]
+    lines = [
+        HEADER.format(
+            w=w,
+            h=h,
+            caption_margin=int(h * 0.28),
+            hook_margin=int(h * 0.12),
+            hook_box=ass_color(config.HOOK_BOX_COLOR),
+        )
+    ]
+    highlight = _highlight()
 
     if hook:
         lines.append(f"Dialogue: 1,{_ts(0)},{_ts(hook_seconds)},Hook,,0,0,0,,{_clean(hook)}")
@@ -77,7 +98,7 @@ def write_ass(
             # Cada palavra fica destacada do seu início até o início da próxima.
             end = chunk[i + 1].start if i + 1 < len(chunk) else chunk_end
             text = " ".join(
-                f"{HIGHLIGHT}{_clean(x.text)}{RESET}" if j == i else _clean(x.text)
+                f"{highlight}{_clean(x.text)}{RESET}" if j == i else _clean(x.text)
                 for j, x in enumerate(chunk)
             )
             lines.append(f"Dialogue: 0,{_ts(current.start)},{_ts(end)},Caption,,0,0,0,,{text}")

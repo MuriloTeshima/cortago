@@ -13,6 +13,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 - Editor de volume da música por corte: botões − / + no card e controle de 0–150% na edição.
 - Crédito da música (arquivo `.txt` ao lado da faixa) incluído automaticamente na descrição.
 - Migração automática do banco para colunas novas (mudanças aditivas).
+- Personalização por canal via `.env`: `CORTAGO_CHANNEL_CONTEXT` (contexto do canal no prompt do Claude),
+  `CORTAGO_HIGHLIGHT_COLOR` e `CORTAGO_HOOK_BOX_COLOR` (cores das legendas).
+
+### Alterado
+- O prompt de escolha dos cortes deixou de ser fixo em "canal sobre GTA 6" e usa o contexto configurado
+  (padrão: canal de cortes de games em geral).
+
+### Removido
+- Documentação de canal (`docs/canal/`). O repositório agora é só da ferramenta.
 
 ## [0.2.0] - 2026-11-15
 

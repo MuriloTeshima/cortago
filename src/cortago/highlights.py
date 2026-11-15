@@ -21,7 +21,7 @@ class ClipSuggestion(BaseModel):
     reason: str
 
 
-SYSTEM = """Você é editor de um canal brasileiro de YouTube Shorts sobre GTA 6.
+SYSTEM = """Você é editor de vídeos para {channel_context}.
 Sua tarefa é encontrar, na transcrição de um vídeo, os trechos com mais potencial de virar Short.
 
 Um bom corte:
@@ -70,6 +70,10 @@ SCHEMA = {
 }
 
 
+def system_prompt(min_s: int, max_s: int) -> str:
+    return SYSTEM.format(channel_context=config.CHANNEL_CONTEXT.strip().rstrip("."), min_s=min_s, max_s=max_s)
+
+
 def pick_clips(
     source: SourceInfo,
     transcript: Transcript,
@@ -87,7 +91,7 @@ def pick_clips(
     response = client.beta.messages.create(
         model=config.CLAUDE_MODEL,
         max_tokens=16000,
-        system=SYSTEM.format(min_s=min_s, max_s=max_s),
+        system=system_prompt(min_s, max_s),
         messages=[{"role": "user", "content": user}],
         output_config={
             "effort": config.CLAUDE_EFFORT,
