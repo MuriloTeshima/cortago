@@ -9,11 +9,16 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "anthropic>=2.8.0",
+    "fastapi>=0.163.0",
+    "jinja2>=3.1.6",
     "mlx-whisper>=0.4.3; sys_platform == 'darwin'",
     "pydantic>=2.14.3",
     "python-dotenv>=1.2.4",
+    "python-multipart>=0.0.33",
     "rich>=15.0.0",
+    "sqlmodel>=0.0.50",
     "typer>=0.29.1",
+    "uvicorn[standard]>=0.54.0",
 ]
 
 [project.scripts]
@@ -25,6 +30,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "httpx>=0.28.1",
     "pytest>=9.2.0",
     "ruff>=0.17.5",
 ]
@@ -35,9 +41,7 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501"]  # o formatter cuida do tamanho das linhas; strings longas são aceitas
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-
-[tool.ruff.lint.per-file-ignores]
-"src/cortago/subtitles.py" = ["E501"]  # linhas do formato ASS não podem ser quebradas

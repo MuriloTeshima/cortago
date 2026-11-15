@@ -2,14 +2,13 @@
 
 import subprocess
 from pathlib import Path
-from typing import Literal
 
 from cortago import config
 
-Layout = Literal["blur", "crop"]
+LAYOUTS: tuple[str, ...] = ("blur", "crop")
 
 
-def _video_filter(layout: Layout, ass_name: str) -> str:
+def _video_filter(layout: str, ass_name: str) -> str:
     W, H = config.OUT_W, config.OUT_H
     if layout == "crop":
         # Corta o centro do quadro: bom pra facecam/pessoa falando, ruim pra HUD de gameplay.
@@ -23,7 +22,7 @@ def _video_filter(layout: Layout, ass_name: str) -> str:
     )
 
 
-def render_clip(source: Path, start: float, end: float, ass: Path, out: Path, layout: Layout) -> None:
+def render_clip(source: Path, start: float, end: float, ass: Path, out: Path, layout: str) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     cmd = [
         "ffmpeg",
@@ -58,4 +57,4 @@ def render_clip(source: Path, start: float, end: float, ass: Path, out: Path, la
         str(out.resolve()),
     ]
     # Roda dentro da pasta do .ass pra não precisar escapar o caminho no filtro do FFmpeg.
-    subprocess.run(cmd, check=True, cwd=ass.parent)
+    subprocess.run(cmd, check=True, cwd=ass.parent, capture_output=True, text=True)

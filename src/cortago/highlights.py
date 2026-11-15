@@ -10,7 +10,7 @@ from cortago.download import SourceInfo
 from cortago.transcribe import Transcript, to_prompt_text
 
 
-class Clip(BaseModel):
+class ClipSuggestion(BaseModel):
     start: float
     end: float
     title: str
@@ -76,7 +76,7 @@ def pick_clips(
     count: int,
     min_s: int = 20,
     max_s: int = 60,
-) -> tuple[list[Clip], anthropic.types.beta.BetaUsage]:
+) -> tuple[list[ClipSuggestion], anthropic.types.beta.BetaUsage]:
     client = anthropic.Anthropic()
 
     user = (
@@ -104,13 +104,13 @@ def pick_clips(
         raise RuntimeError("Resposta cortada por max_tokens; peça menos cortes.")
 
     text = next(b.text for b in response.content if b.type == "text")
-    clips = [Clip.model_validate(c) for c in json.loads(text)["clips"]]
+    clips = [ClipSuggestion.model_validate(c) for c in json.loads(text)["clips"]]
     clips = [_snap_to_words(c, transcript) for c in clips]
     clips = [c for c in clips if c.end - c.start >= min_s * 0.75]
     return sorted(clips, key=lambda c: -c.score)[:count], response.usage
 
 
-def _snap_to_words(clip: Clip, transcript: Transcript, pad: float = 0.15) -> Clip:
+def _snap_to_words(clip: ClipSuggestion, transcript: Transcript, pad: float = 0.15) -> ClipSuggestion:
     """Ajusta início/fim para bordas de palavras reais, evitando cortar sílabas."""
     words = transcript.words
     inside = [w for w in words if w.end > clip.start - 0.5 and w.start < clip.end + 0.5]

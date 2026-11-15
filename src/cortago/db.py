@@ -1,0 +1,170 @@
+"""Persistência de jobs e cortes (SQLite via SQLModel)."""
+
+from collections.abc import Iterator
+from contextlib import contextmanager
+from datetime import UTC, datetime
+from enum import StrEnum
+
+from sqlalchemy import JSON, Column
+from sqlmodel import Field, Session, SQLModel, create_engine, select
+
+from cortago import config
+
+
+def _now() -> datetime:
+    return datetime.now(UTC)
+
+
+class JobStatus(StrEnum):
+    QUEUED = "queued"
+    DOWNLOADING = "downloading"
+    TRANSCRIBING = "transcribing"
+    SELECTING = "selecting"
+    RENDERING = "rendering"
+    DONE = "done"
+    ERROR = "error"
+
+    @property
+    def running(self) -> bool:
+        return self not in (JobStatus.DONE, JobStatus.ERROR)
+
+
+class ClipStatus(StrEnum):
+    SUGGESTED = "suggested"
+    APPROVED = "approved"
+    DISCARDED = "discarded"
+
+
+class RenderStatus(StrEnum):
+    PENDING = "pending"
+    RENDERING = "rendering"
+    DONE = "done"
+    ERROR = "error"
+
+
+class Job(SQLModel, table=True):
+    # AUTOINCREMENT: ids nunca são reaproveitados, então URLs de vídeo antigas não colidem com novas.
+    __table_args__ = {"sqlite_autoincrement": True}
+
+    id: int | None = Field(default=None, primary_key=True)
+    source: str
+    status: JobStatus = JobStatus.QUEUED
+    error: str | None = None
+
+    title: str | None = None
+    channel: str | None = None
+    url: str | None = None
+    duration: float | None = None
+    source_file: str | None = None  # nome do arquivo dentro da pasta do job
+
+    layout: str = "blur"
+    max_clips: int = 5
+    min_seconds: int = 20
+    max_seconds: int = 60
+    language: str | None = None
+
+    input_tokens: int = 0
+    output_tokens: int = 0
+    created_at: datetime = Field(default_factory=_now)
+    updated_at: datetime = Field(default_factory=_now)
+
+    @property
+    def dir_name(self) -> str:
+        return f"{self.id:05d}"
+
+    @property
+    def display_title(self) -> str:
+        return self.title or self.source
+
+
+class Clip(SQLModel, table=True):
+    __table_args__ = {"sqlite_autoincrement": True}
+
+    id: int | None = Field(default=None, primary_key=True)
+    job_id: int = Field(foreign_key="job.id", index=True)
+    position: int
+
+    start: float
+    end: float
+    title: str
+    hook: str
+    description: str
+    hashtags: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    score: int
+    reason: str
+
+    status: ClipStatus = ClipStatus.SUGGESTED
+    render_status: RenderStatus = RenderStatus.PENDING
+    render_error: str | None = None
+    render_version: int = 0
+
+    @property
+    def duration(self) -> float:
+        return self.end - self.start
+
+    @property
+    def file_stem(self) -> str:
+        return f"clip_{self.position:02d}"
+
+
+_engine = None
+
+
+def engine():
+    global _engine
+    if _engine is None:
+        config.DATA_DIR.mkdir(parents=True, exist_ok=True)
+        _engine = create_engine(
+            f"sqlite:///{config.DATA_DIR / 'cortago.db'}",
+            connect_args={"check_same_thread": False},
+        )
+        SQLModel.metadata.create_all(_engine)
+    return _engine
+
+
+def use_engine(new_engine) -> None:
+    """Troca o engine (usado nos testes)."""
+    global _engine
+    _engine = new_engine
+    SQLModel.metadata.create_all(_engine)
+
+
+@contextmanager
+def session() -> Iterator[Session]:
+    with Session(engine(), expire_on_commit=False) as s:
+        yield s
+
+
+def get_job(job_id: int) -> Job | None:
+    with session() as s:
+        return s.get(Job, job_id)
+
+
+def update_job(job_id: int, **fields) -> Job:
+    with session() as s:
+        job = s.get(Job, job_id)
+        assert job is not None, f"job {job_id} não existe"
+        for k, v in fields.items():
+            setattr(job, k, v)
+        job.updated_at = _now()
+        s.add(job)
+        s.commit()
+        s.refresh(job)
+        return job
+
+
+def update_clip(clip_id: int, **fields) -> Clip:
+    with session() as s:
+        clip = s.get(Clip, clip_id)
+        assert clip is not None, f"clip {clip_id} não existe"
+        for k, v in fields.items():
+            setattr(clip, k, v)
+        s.add(clip)
+        s.commit()
+        s.refresh(clip)
+        return clip
+
+
+def job_clips(job_id: int) -> list[Clip]:
+    with session() as s:
+        return list(s.exec(select(Clip).where(Clip.job_id == job_id).order_by(Clip.position)))

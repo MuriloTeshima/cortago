@@ -1,4 +1,4 @@
-from cortago.highlights import Clip, _snap_to_words
+from cortago.highlights import ClipSuggestion, _snap_to_words
 from cortago.transcribe import Segment, Transcript, Word
 
 
@@ -7,8 +7,10 @@ def make_transcript() -> Transcript:
     return Transcript(language="pt", segments=[Segment(start=0, end=30, text="", words=words)])
 
 
-def clip(start: float, end: float) -> Clip:
-    return Clip(start=start, end=end, title="t", hook="h", description="d", hashtags=[], score=5, reason="r")
+def clip(start: float, end: float) -> ClipSuggestion:
+    return ClipSuggestion(
+        start=start, end=end, title="t", hook="h", description="d", hashtags=[], score=5, reason="r"
+    )
 
 
 def test_snap_expands_to_word_boundaries():
