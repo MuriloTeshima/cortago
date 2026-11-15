@@ -4,13 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}CortaGo{% endblock %}</title>
+  <link rel="icon" href="/static/brand/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" href="/static/brand/icon-32.png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/static/brand/apple-touch-icon.png">
+  <meta name="theme-color" content="#0E0F13">
   <link rel="stylesheet" href="/static/style.css">
   <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
   <script src="/static/app.js" defer></script>
 </head>
 <body>
   <header class="topbar">
-    <a href="/" class="brand">Corta<span>Go</span></a>
+    <a href="/" class="brand"><img src="/static/brand/logo.png" alt="CortaGo" height="28"></a>
   </header>
   <main class="container">
     {% block content %}{% endblock %}

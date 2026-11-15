@@ -29,8 +29,8 @@ h3 { font-size: 1rem; margin: 0.25rem 0; }
 code { font-size: 0.85em; word-break: break-word; }
 
 .topbar { border-bottom: 1px solid var(--border); padding: 0.9rem 1.5rem; }
-.brand { font-weight: 800; font-size: 1.2rem; text-decoration: none; letter-spacing: -0.02em; }
-.brand span { color: var(--accent); }
+.brand { display: inline-flex; align-items: center; }
+.brand img { height: 28px; width: auto; display: block; }
 .container { max-width: 1280px; margin: 0 auto; padding: 1.5rem; }
 
 .muted { color: var(--muted); }
