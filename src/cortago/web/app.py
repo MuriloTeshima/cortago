@@ -12,11 +12,15 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import delete, select
 
-from cortago import config, db, pipeline, render, transcribe, worker
+from cortago import config, db, music, pipeline, render, transcribe, worker
 from cortago.db import Clip, ClipStatus, Job, RenderStatus
 
 HERE = Path(__file__).parent
 MAX_CLIP_SECONDS = 180
+MAX_MUSIC_LEVEL = 150  # % do volume automático
+MUSIC_LEVEL_STEP = 25  # passo dos botões rápidos − / +
+# Valor do <select> para "sem música". Não pode ser "": o FastAPI trata campo vazio como ausente.
+NO_MUSIC = "__none__"
 
 STATUS_LABELS = {
     "queued": "Na fila",
@@ -45,6 +49,12 @@ templates.env.globals.update(
     STATUS_LABELS=STATUS_LABELS,
     LAYOUTS=render.LAYOUTS,
     clip_text=pipeline.clip_text,
+    music_tracks=music.tracks,
+    music_name=music.display_name,
+    MUSIC_DIR=config.MUSIC_DIR,
+    NO_MUSIC=NO_MUSIC,
+    MAX_MUSIC_LEVEL=MAX_MUSIC_LEVEL,
+    MUSIC_LEVEL_STEP=MUSIC_LEVEL_STEP,
 )
 
 
@@ -141,6 +151,7 @@ def create_job(
     language: Annotated[str, Form()] = "",
     min_seconds: Annotated[int, Form(ge=5, le=170)] = 20,
     max_seconds: Annotated[int, Form(ge=10, le=MAX_CLIP_SECONDS)] = 60,
+    music_enabled: Annotated[bool, Form(alias="music")] = False,  # checkbox: ausente quando desmarcado
 ):
     if not source.strip():
         raise HTTPException(400, "Informe uma URL ou caminho de arquivo")
@@ -152,6 +163,7 @@ def create_job(
             min_seconds=min_seconds,
             max_seconds=max_seconds,
             language=language or None,
+            music=music_enabled,
         )
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
@@ -219,6 +231,8 @@ def clip_update(
     hashtags: Annotated[str, Form()] = "",
     start: Annotated[float, Form(ge=0)] = 0,
     end: Annotated[float, Form(gt=0)] = 0,
+    music_track: Annotated[str | None, Form()] = None,  # NO_MUSIC = sem música; ausente = não mexe
+    music_level: Annotated[int | None, Form(ge=0, le=MAX_MUSIC_LEVEL)] = None,  # ausente = não mexe
 ):
     clip, job = _get_clip(clip_id)
     if end <= start:
@@ -228,7 +242,23 @@ def clip_update(
     if job.duration and end > job.duration + 0.5:
         raise HTTPException(400, "O fim passa da duração do vídeo")
 
-    needs_render = (start, end, hook.strip()) != (clip.start, clip.end, clip.hook)
+    if music_track is None:
+        music_track = clip.music_track
+    elif music_track == NO_MUSIC:
+        music_track = ""
+    elif music_track not in music.tracks():
+        raise HTTPException(400, "Essa música não está na biblioteca")
+
+    if music_level is None:
+        music_level = clip.music_level
+
+    needs_render = (start, end, hook.strip(), music_track or "", music_level) != (
+        clip.start,
+        clip.end,
+        clip.hook,
+        clip.music_track or "",
+        clip.music_level,
+    )
     clip = db.update_clip(
         clip_id,
         title=title.strip(),
@@ -237,6 +267,8 @@ def clip_update(
         hashtags=[t.strip().lstrip("#") for t in hashtags.replace(",", " ").split() if t.strip("# ")],
         start=start,
         end=end,
+        music_track=music_track,
+        music_level=music_level,
     )
     if needs_render:
         worker.submit_render(clip_id)
@@ -253,6 +285,20 @@ def clip_set_status(request: Request, clip_id: int, status: Annotated[ClipStatus
     if status != ClipStatus.DISCARDED and clip.render_status in (RenderStatus.PENDING, RenderStatus.ERROR):
         worker.submit_render(clip_id)
         clip, job = _get_clip(clip_id)
+    return _clip_card(request, clip, job)
+
+
+@app.post("/clips/{clip_id}/music-level", response_class=HTMLResponse)
+def clip_music_level(request: Request, clip_id: int, delta: Annotated[int, Form(ge=-100, le=100)]):
+    """Botões rápidos − / +: ajusta o volume da música e re-renderiza."""
+    clip, job = _get_clip(clip_id)
+    if not clip.music_track:
+        raise HTTPException(400, "Este corte não tem música")
+    level = min(max(clip.music_level + delta, 0), MAX_MUSIC_LEVEL)
+    if level != clip.music_level:
+        db.update_clip(clip_id, music_level=level)
+        worker.submit_render(clip_id)
+    clip, job = _get_clip(clip_id)
     return _clip_card(request, clip, job)
 
 

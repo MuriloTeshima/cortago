@@ -7,6 +7,7 @@
         {% if job.url %}<a href="{{ job.url }}" target="_blank" rel="noopener">{{ job.channel }}</a>{% else %}{{ job.channel or job.source }}{% endif %}
         {% if job.duration %} · {{ job.duration | time }}{% endif %}
         · layout {{ job.layout }} · {{ job.min_seconds }}–{{ job.max_seconds }}s
+        · {{ "com" if job.music else "sem" }} música
         {% if job.input_tokens %} · {{ job.input_tokens }} / {{ job.output_tokens }} tokens{% endif %}
       </p>
     </div>

@@ -5,6 +5,18 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Unreleased]
 
 ### Adicionado
+- Música de fundo: cada corte recebe uma faixa sorteada da biblioteca `data/music/`, normalizada,
+  com fade e ducking (abaixa ~10 dB durante a fala, igual pra vídeos gravados alto ou baixo).
+- Trocar ou remover a música na edição do corte; opção "Música de fundo" ao criar o job e `--no-music` na CLI.
+- Volume da música automático e relativo ao áudio de cada trecho (fica `CORTAGO_MUSIC_GAP_DB` dB abaixo),
+  pra música não sobressair em vídeos gravados baixo.
+- Editor de volume da música por corte: botões − / + no card e controle de 0–150% na edição.
+- Crédito da música (arquivo `.txt` ao lado da faixa) incluído automaticamente na descrição.
+- Migração automática do banco para colunas novas (mudanças aditivas).
+
+## [0.2.0] - 2026-11-15
+
+### Adicionado
 - Interface web (`cortago serve`): enviar vídeos, acompanhar o progresso, assistir, aprovar,
   descartar e editar cortes, baixar o vídeo e copiar o texto pronto pro YouTube.
 - Banco SQLite com jobs e cortes, compartilhado entre CLI e interface.
@@ -23,3 +35,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 - Legendas estilo Shorts (palavra atual destacada) e gancho no topo.
 - Render 9:16 com FFmpeg nos layouts `blur` e `crop`, usando encoder de hardware.
 - Lint (ruff), testes (pytest) e CI no GitHub Actions.
+
+[Unreleased]: https://github.com/MuriloTeshima/cortago/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/MuriloTeshima/cortago/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/MuriloTeshima/cortago/releases/tag/v0.1.0
