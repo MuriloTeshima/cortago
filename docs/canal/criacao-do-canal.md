@@ -16,8 +16,8 @@ Siga em ordem. Marque `[x]` conforme for fazendo.
 - [ ] Nome: `Game Cuts`
 - [ ] @: `GameCutsBR` (se não estiver mais livre, use `GameCutsOficial` e atualize [identidade.md](identidade.md))
 - [ ] Foto do canal: `CorteGamer/profileImg.png`
-- [ ] Banner: adaptar `CorteGamer/backImg2.png` (ou `backImg.png`) para 2560 × 1440 antes de enviar
-  (ver [identidade.md](identidade.md#arquivos-das-artes-cortegamer))
+- [ ] Banner: `CorteGamer/banner_2560x1440.png` (já no formato do YouTube; ver
+  [identidade.md](identidade.md#arquivos-das-artes-cortegamer))
 - [ ] Descrição do canal ([identidade.md](identidade.md#descrição-do-canal-youtube))
 - [ ] E-mail de contato comercial (Personalização → Informações básicas)
 

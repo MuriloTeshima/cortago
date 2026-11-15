@@ -80,11 +80,23 @@ marca é um ajuste pequeno na ferramenta (pendente).
 | --- | --- | --- | --- |
 | `profileImg.png` | 1254 × 1254 | foto do canal | ✅ ok (mínimo recomendado: 800 × 800) |
 | `backImg.png` | 1983 × 793 | banner (versão 1) | ⚠️ abaixo do mínimo do YouTube (2048 × 1152) e com proporção diferente de 16:9 |
-| `backImg2.png` | 1983 × 793 | banner (versão 2) | ⚠️ mesmo problema |
+| `backImg2.png` | 1983 × 793 | banner (versão 2, original) | ⚠️ mesmo problema; é a base do banner final |
+| **`banner_2560x1440.png`** | 2560 × 1440 | **banner para subir no YouTube** | ✅ gerado a partir do `backImg2.png` |
 
 **Banner:** o YouTube pede 2560 × 1440 px (16:9). Em todos os aparelhos aparece só a **área segura central
 de 1546 × 423 px**. Logo, texto e "Inscreva-se" precisam caber nessa faixa, senão são cortados no celular.
-As artes atuais precisam ser adaptadas pra esse formato antes do upload.
+
+O `banner_2560x1440.png` encaixa logo, controle, "Inscreva-se" e slogan nessa área. O resto do quadro
+(visível na TV e nas laterais do computador) é um brilho desfocado nas cores da arte. Se a arte mudar,
+gere de novo:
+
+```bash
+uv run --with pillow --with numpy python tools/make_banner.py CorteGamer/backImg2.png \
+  CorteGamer/banner_2560x1440.png --box 260 95 1983 610 --preview /tmp/preview.png
+```
+
+`--box` é o retângulo (em pixels da arte original) que precisa aparecer em qualquer aparelho. O `--preview`
+desenha a área segura (verde) e a faixa do computador (azul) pra conferir.
 
 **Logo:** o ícone de "play" rosa lembra o logo do YouTube. As diretrizes de marca do YouTube não permitem
 usar ou imitar o logo dele na identidade do canal. Vale trocar o ícone por um controle, que já aparece no
