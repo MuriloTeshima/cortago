@@ -15,13 +15,24 @@ ScaledBorderAndShadow: yes
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Caption,Arial Black,78,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,6,2,2,80,80,{caption_margin},1
-Style: Hook,Arial Black,72,&H00FFFFFF,&H00FFFFFF,&H00000000,&HC0000000,-1,0,0,0,100,100,0,0,3,18,0,8,80,80,{hook_margin},1
+Style: Hook,Arial Black,72,&H00FFFFFF,&H00FFFFFF,{hook_box},{hook_box},-1,0,0,0,100,100,0,0,3,18,0,8,80,80,{hook_margin},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 
-HIGHLIGHT = r"{\c&H0000E5FF&}"  # amarelo (formato BGR do ASS)
+# Cores da marca Game Cuts (docs/canal/identidade.md#visual).
+BRAND_HIGHLIGHT = "#E33C95"  # magenta: palavra sendo falada
+BRAND_HOOK_BOX = "#300854"  # roxo escuro: caixa do gancho
+
+
+def ass_color(hex_rgb: str, alpha: int = 0) -> str:
+    """'#RRGGBB' → '&HAABBGGRR' (o ASS usa BGR e alpha invertido: 00 = opaco)."""
+    r, g, b = (int(hex_rgb.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4))
+    return f"&H{alpha:02X}{b:02X}{g:02X}{r:02X}"
+
+
+HIGHLIGHT = "{\\c" + ass_color(BRAND_HIGHLIGHT) + "&}"
 RESET = r"{\c&H00FFFFFF&}"
 
 
@@ -60,7 +71,15 @@ def write_ass(
     hook_seconds: float = 3.0,
 ) -> None:
     w, h = config.OUT_W, config.OUT_H
-    lines = [HEADER.format(w=w, h=h, caption_margin=int(h * 0.28), hook_margin=int(h * 0.12))]
+    lines = [
+        HEADER.format(
+            w=w,
+            h=h,
+            caption_margin=int(h * 0.28),
+            hook_margin=int(h * 0.12),
+            hook_box=ass_color(BRAND_HOOK_BOX),
+        )
+    ]
 
     if hook:
         lines.append(f"Dialogue: 1,{_ts(0)},{_ts(hook_seconds)},Hook,,0,0,0,,{_clean(hook)}")

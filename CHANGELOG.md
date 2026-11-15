@@ -13,6 +13,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 - Editor de volume da música por corte: botões − / + no card e controle de 0–150% na edição.
 - Crédito da música (arquivo `.txt` ao lado da faixa) incluído automaticamente na descrição.
 - Migração automática do banco para colunas novas (mudanças aditivas).
+- `tools/make_banner.py`: adapta uma arte para banner do YouTube (2560 × 1440, conteúdo na área segura).
+
+### Alterado
+- Legendas com as cores da marca Game Cuts: palavra falada em magenta (`#E33C95`) e gancho em caixa roxa (`#300854`).
 
 ## [0.2.0] - 2026-11-15
 

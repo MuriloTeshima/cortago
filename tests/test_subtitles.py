@@ -1,4 +1,4 @@
-from cortago.subtitles import _chunks, _ts, write_ass
+from cortago.subtitles import _chunks, _ts, ass_color, write_ass
 from cortago.transcribe import Word
 
 
@@ -34,5 +34,11 @@ def test_write_ass_shifts_times_and_highlights(tmp_path):
     dialogues = [line for line in text.splitlines() if line.startswith("Dialogue: 0")]
     assert len(dialogues) == 2
     assert dialogues[0].startswith("Dialogue: 0,0:00:00.00,0:00:00.50,")
-    assert r"{\c&H0000E5FF&}OLHA" in dialogues[0]
-    assert r"{\c&H0000E5FF&}ISSO" in dialogues[1]
+    assert r"{\c&H00953CE3&}OLHA" in dialogues[0]  # magenta da marca, #E33C95 em BGR
+    assert r"{\c&H00953CE3&}ISSO" in dialogues[1]
+    assert "&H00540830,&H00540830" in text  # caixa do gancho em #300854
+
+
+def test_ass_color_converts_rgb_to_bgr():
+    assert ass_color("#E33C95") == "&H00953CE3"
+    assert ass_color("FFD400", alpha=0x80) == "&H8000D4FF"

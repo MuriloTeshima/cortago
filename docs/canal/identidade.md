@@ -71,8 +71,8 @@ Paleta extraída das artes (`CorteGamer/backImg.png`):
 | Creme (sol, detalhes) | `#F6D4B7` |
 | Texto do logo | branco `#FFFFFF` com contorno preto |
 
-As legendas que o CortaGo gera ainda usam o amarelo `#FFD400` como destaque. Trocar pro magenta da
-marca é um ajuste pequeno na ferramenta (pendente).
+As legendas dos Shorts seguem a marca: a palavra sendo falada em magenta `#E33C95` e o gancho numa caixa
+roxa `#300854`, com texto branco. As cores ficam em `src/cortago/subtitles.py` (`BRAND_HIGHLIGHT` e `BRAND_HOOK_BOX`).
 
 ### Arquivos das artes (`CorteGamer/`)
 
