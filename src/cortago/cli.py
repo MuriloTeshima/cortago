@@ -43,6 +43,7 @@ def run(
     language: str = typer.Option(None, "--lang", help="Idioma do áudio (pt, en...). Vazio = detectar"),
     min_seconds: int = typer.Option(20, "--min", help="Duração mínima do corte"),
     max_seconds: int = typer.Option(60, "--max", help="Duração máxima do corte"),
+    music: bool = typer.Option(True, help="Música de fundo sorteada da biblioteca (CORTAGO_MUSIC_DIR)"),
 ) -> None:
     """Processa um vídeo direto no terminal. O resultado também aparece na interface web."""
     try:
@@ -53,6 +54,7 @@ def run(
             min_seconds=min_seconds,
             max_seconds=max_seconds,
             language=language,
+            music=music,
         )
     except ValueError as exc:
         raise typer.BadParameter(str(exc)) from exc

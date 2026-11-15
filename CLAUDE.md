@@ -28,4 +28,8 @@ Etapas em `src/cortago/`: `download` → `transcribe` → `highlights` (Claude) 
 Arquivos de cada job em `data/jobs/<id>/` (`source.*`, `transcript.json`, `clips/clip_NN.{mp4,ass,txt}`).
 
 - Testes usam banco em memória e `tmp_path` (fixture em `tests/conftest.py`); na web, `worker` é trocado por fakes.
+- Colunas novas: `db.migrate()` adiciona automaticamente ao abrir o banco (só mudanças aditivas, com
+  default fixo). Renomear/remover coluna exige adotar Alembic. Faça backup de `data/cortago.db` antes de testar.
+- Música: `Clip.music_track` é `None` (sortear no próximo render), `""` (sem música) ou nome do arquivo em `MUSIC_DIR`.
+  No formulário, "sem música" é o valor `__none__` porque o FastAPI trata campo vazio como ausente.
 - IDs usam AUTOINCREMENT: não reaproveitar IDs evita que o navegador mostre vídeo antigo do cache.

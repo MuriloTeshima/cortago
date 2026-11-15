@@ -5,6 +5,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Unreleased]
 
 ### Adicionado
+- Música de fundo: cada corte recebe uma faixa sorteada da biblioteca `data/music/`, normalizada,
+  com fade e ducking (abaixa ~10 dB durante a fala, igual pra vídeos gravados alto ou baixo).
+- Trocar ou remover a música na edição do corte; opção "Música de fundo" ao criar o job e `--no-music` na CLI.
+- Crédito da música (arquivo `.txt` ao lado da faixa) incluído automaticamente na descrição.
+- Migração automática do banco para colunas novas (mudanças aditivas).
+
+### Adicionado
 - Interface web (`cortago serve`): enviar vídeos, acompanhar o progresso, assistir, aprovar,
   descartar e editar cortes, baixar o vídeo e copiar o texto pronto pro YouTube.
 - Banco SQLite com jobs e cortes, compartilhado entre CLI e interface.

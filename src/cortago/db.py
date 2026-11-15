@@ -5,6 +5,7 @@ from contextlib import contextmanager
 from datetime import UTC, datetime
 from enum import StrEnum
 
+from pydantic_core import PydanticUndefined
 from sqlalchemy import JSON, Column
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
@@ -62,6 +63,7 @@ class Job(SQLModel, table=True):
     min_seconds: int = 20
     max_seconds: int = 60
     language: str | None = None
+    music: bool = True  # sortear música de fundo para os cortes
 
     input_tokens: int = 0
     output_tokens: int = 0
@@ -97,6 +99,8 @@ class Clip(SQLModel, table=True):
     render_status: RenderStatus = RenderStatus.PENDING
     render_error: str | None = None
     render_version: int = 0
+    # None = ainda não escolhida (sorteia no render); "" = sem música; senão, nome do arquivo em MUSIC_DIR.
+    music_track: str | None = None
 
     @property
     def duration(self) -> float:
@@ -119,6 +123,7 @@ def engine():
             connect_args={"check_same_thread": False},
         )
         SQLModel.metadata.create_all(_engine)
+        migrate(_engine)
     return _engine
 
 
@@ -127,6 +132,44 @@ def use_engine(new_engine) -> None:
     global _engine
     _engine = new_engine
     SQLModel.metadata.create_all(_engine)
+    migrate(_engine)
+
+
+def _sql_literal(value) -> str:
+    if isinstance(value, bool):
+        return "1" if value else "0"
+    if isinstance(value, int | float):
+        return str(value)
+    return "'" + str(value).replace("'", "''") + "'"
+
+
+def migrate(eng) -> list[str]:
+    """Adiciona colunas novas em tabelas existentes (SQLite não faz isso no create_all).
+
+    Cobre só mudanças aditivas, que é o que este projeto precisa por enquanto. Se um dia
+    for preciso renomear/remover colunas, é hora de adotar o Alembic.
+    """
+    added = []
+    with eng.begin() as conn:
+        for model in (Job, Clip):
+            table = model.__table__
+            existing = {row[1] for row in conn.exec_driver_sql(f"PRAGMA table_info({table.name})")}
+            if not existing:  # tabela nova: o create_all já cria completa
+                continue
+            for column in table.columns:
+                if column.name in existing:
+                    continue
+                ddl = f"ALTER TABLE {table.name} ADD COLUMN {column.name} {column.type.compile(eng.dialect)}"
+                field = model.model_fields[column.name]
+                if not column.nullable:
+                    if field.default is None or field.default is PydanticUndefined:
+                        raise RuntimeError(
+                            f"{table.name}.{column.name}: coluna obrigatória nova precisa de um valor padrão fixo"
+                        )
+                    ddl += f" NOT NULL DEFAULT {_sql_literal(field.default)}"
+                conn.exec_driver_sql(ddl)
+                added.append(f"{table.name}.{column.name}")
+    return added
 
 
 @contextmanager

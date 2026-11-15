@@ -9,7 +9,7 @@ from pathlib import Path
 
 from sqlmodel import delete
 
-from cortago import config, db, download, highlights, render, subtitles, transcribe
+from cortago import config, db, download, highlights, music, render, subtitles, transcribe
 from cortago.db import Clip, ClipStatus, Job, JobStatus, RenderStatus
 
 Log = Callable[[str], None]
@@ -30,6 +30,9 @@ def clip_path(job: Job, clip: Clip, ext: str = "mp4") -> Path:
 def clip_text(clip: Clip, job: Job) -> str:
     """Título, descrição, créditos e hashtags prontos pra colar no YouTube."""
     credit = f"Créditos: {job.channel}" + (f" — {job.url}" if job.url else "")
+    music_credit = music.credit(clip.music_track) if clip.music_track else None
+    if music_credit:
+        credit += f"\nMúsica: {music_credit}"
     tags = " ".join(f"#{t.lstrip('#')}" for t in clip.hashtags)
     return f"{clip.title}\n\n{clip.description}\n\n{credit}\n\n{tags}\n"
 
@@ -48,6 +51,7 @@ def create_job(
     min_seconds: int = 20,
     max_seconds: int = 60,
     language: str | None = None,
+    music: bool = True,
 ) -> Job:
     if layout not in render.LAYOUTS:
         raise ValueError(f"layout inválido: {layout}")
@@ -61,6 +65,7 @@ def create_job(
             min_seconds=min_seconds,
             max_seconds=max_seconds,
             language=language or None,
+            music=music,
         )
         s.add(job)
         s.commit()
@@ -158,14 +163,44 @@ def render_clip(clip_id: int) -> Clip:
         ass = clip_path(job, clip, "ass")
         ass.parent.mkdir(parents=True, exist_ok=True)
         subtitles.write_ass(tr.words, clip.start, clip.end, clip.hook, ass)
+        clip = _ensure_music_track(clip, job)
+        track = _music_file(clip)
         render.render_clip(
-            job_dir(job) / job.source_file, clip.start, clip.end, ass, clip_path(job, clip), job.layout
-        )  # type: ignore[arg-type]
+            job_dir(job) / job.source_file,
+            clip.start,
+            clip.end,
+            ass,
+            clip_path(job, clip),
+            job.layout,
+            music=track,
+            music_offset=music.offset(render.media_duration(track), clip.duration, clip.id) if track else 0.0,  # type: ignore[arg-type]
+        )
         write_clip_text(job, clip)
     except Exception as exc:
         db.update_clip(clip_id, render_status=RenderStatus.ERROR, render_error=describe_error(exc))
         raise
     return db.update_clip(clip_id, render_status=RenderStatus.DONE, render_version=clip.render_version + 1)
+
+
+def _ensure_music_track(clip: Clip, job: Job) -> Clip:
+    """Sorteia a música na primeira renderização. Depois fica fixa até o usuário trocar."""
+    if clip.music_track is not None or not job.music:
+        return clip
+    track = music.pick(clip.id)  # type: ignore[arg-type]
+    if track is None:  # biblioteca vazia: tenta de novo quando houver músicas
+        return clip
+    return db.update_clip(clip.id, music_track=track)  # type: ignore[arg-type]
+
+
+def _music_file(clip: Clip):
+    if not clip.music_track:
+        return None
+    path = music.path(clip.music_track)
+    if path is None:
+        raise FileNotFoundError(
+            f"Música '{clip.music_track}' não está mais em {config.MUSIC_DIR}. Escolha outra na edição do corte."
+        )
+    return path
 
 
 def describe_error(exc: Exception) -> str:
