@@ -1,6 +1,6 @@
 [project]
 name = "cortago"
-version = "0.2.0"
+version = "0.3.0"
 description = "Gera Shorts automaticamente a partir de vídeos longos"
 readme = "README.md"
 authors = [
