@@ -4,6 +4,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-15
+
 ### Adicionado
 - Música de fundo: cada corte recebe uma faixa sorteada da biblioteca `data/music/`, normalizada,
   com fade e ducking (abaixa ~10 dB durante a fala, igual pra vídeos gravados alto ou baixo).
@@ -19,9 +21,6 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ### Alterado
 - O prompt de escolha dos cortes deixou de ser fixo em "canal sobre GTA 6" e usa o contexto configurado
   (padrão: canal de cortes de games em geral).
-
-### Removido
-- Documentação de canal (`docs/canal/`). O repositório agora é só da ferramenta.
 
 ## [0.2.0] - 2026-11-15
 
@@ -45,6 +44,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 - Render 9:16 com FFmpeg nos layouts `blur` e `crop`, usando encoder de hardware.
 - Lint (ruff), testes (pytest) e CI no GitHub Actions.
 
-[Unreleased]: https://github.com/MuriloTeshima/cortago/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/MuriloTeshima/cortago/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/MuriloTeshima/cortago/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/MuriloTeshima/cortago/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/MuriloTeshima/cortago/releases/tag/v0.1.0
