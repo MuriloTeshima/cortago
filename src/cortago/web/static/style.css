@@ -66,6 +66,12 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 .check { display: flex; gap: 0.6rem; align-items: flex-start; cursor: pointer; }
 .check input { width: auto; margin-top: 0.3rem; accent-color: var(--accent); }
 .music { color: var(--accent); opacity: 0.85; }
+.music-row { display: flex; align-items: center; gap: 0.4rem; }
+.music-row .music { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.music-level { color: var(--muted); font-variant-numeric: tabular-nums; }
+.btn.icon { padding: 0.15rem 0.55rem; font-size: 1rem; font-weight: 700; line-height: 1.2; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+input[type="range"] { padding: 0; accent-color: var(--accent); }
 
 .btn {
   display: inline-flex;

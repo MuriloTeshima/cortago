@@ -14,7 +14,7 @@ class FakeUsage:
 
 @pytest.fixture
 def fakes(monkeypatch):
-    calls = {"download": 0, "select": 0, "render": [], "music": []}
+    calls = {"download": 0, "select": 0, "render": [], "music": [], "volume": []}
 
     def fetch(source, job_dir):
         calls["download"] += 1
@@ -40,9 +40,10 @@ def fakes(monkeypatch):
         ]
         return sugs[:count], FakeUsage()
 
-    def render_clip(source, start, end, ass, out, layout, music=None, music_offset=0.0):
+    def render_clip(source, start, end, ass, out, layout, music=None, music_offset=0.0, music_volume=None):
         calls["render"].append((start, end))
         calls["music"].append(music.name if music else None)
+        calls["volume"].append(music_volume)
         out.write_bytes(b"mp4")
 
     monkeypatch.setattr(pipeline.download, "fetch", fetch)
@@ -50,6 +51,8 @@ def fakes(monkeypatch):
     monkeypatch.setattr(pipeline.highlights, "pick_clips", pick_clips)
     monkeypatch.setattr(pipeline.render, "render_clip", render_clip)
     monkeypatch.setattr(pipeline.render, "media_duration", lambda path: 180.0)
+    monkeypatch.setattr(pipeline.render, "measure_loudness", lambda path, start, duration: calls["loudness"])
+    calls["loudness"] = -15.0
     return calls
 
 
@@ -184,3 +187,20 @@ def test_music_credit_goes_to_text(fakes):
     job = pipeline.run_job(job.id)
     clip = db.job_clips(job.id)[0]
     assert "Música: Faixa X por Fulano (CC BY)" in pipeline.clip_path(job, clip, "txt").read_text()
+
+
+def test_music_volume_follows_video_loudness_and_level(fakes):
+    add_tracks("a.mp3")
+    job = pipeline.create_job("https://youtube.com/watch?v=abc")
+    pipeline.run_job(job.id)
+    normal = fakes["volume"][0]
+
+    clip = db.job_clips(job.id)[0]
+    fakes["loudness"] = -27.0  # vídeo 12 dB mais baixo
+    pipeline.render_clip(clip.id)
+    assert fakes["volume"][-1] < normal / 3
+
+    fakes["loudness"] = -15.0
+    db.update_clip(clip.id, music_level=50)
+    pipeline.render_clip(clip.id)
+    assert abs(fakes["volume"][-1] - normal / 2) < 1e-9

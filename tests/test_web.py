@@ -213,3 +213,58 @@ def test_card_shows_track_and_selector(client, done_job):
     html = client.get(f"/clips/{clip.id}").text
     assert "♪ Epic Trailer" in html
     assert '<option value="Epic_Trailer.mp3" selected>' in html
+
+
+def test_music_level_quick_buttons(client, queued, done_job):
+    _library("a.mp3")
+    _, clip = done_job
+    db.update_clip(clip.id, music_track="a.mp3")
+
+    r = client.post(f"/clips/{clip.id}/music-level", data={"delta": -25})
+    assert r.status_code == 200
+    with db.session() as s:
+        assert s.get(Clip, clip.id).music_level == 75
+    assert queued["renders"] == [clip.id]
+
+    for _ in range(5):  # não passa de 0
+        client.post(f"/clips/{clip.id}/music-level", data={"delta": -25})
+    with db.session() as s:
+        assert s.get(Clip, clip.id).music_level == 0
+    assert len(queued["renders"]) == 4  # 75 → 50 → 25 → 0; os cliques no limite não re-renderizam
+
+
+def test_music_level_requires_music(client, done_job):
+    _, clip = done_job
+    assert client.post(f"/clips/{clip.id}/music-level", data={"delta": 25}).status_code == 400
+
+
+def test_edit_form_music_level(client, queued, done_job):
+    _library("a.mp3")
+    _, clip = done_job
+    db.update_clip(clip.id, music_track="a.mp3")
+    base = {
+        "title": "Detalhe",
+        "hook": "olha",
+        "description": "d",
+        "hashtags": "gta6",
+        "start": "10",
+        "end": "40",
+    }
+
+    client.post(f"/clips/{clip.id}", data={**base, "music_level": "60"})
+    assert queued["renders"] == [clip.id]
+    client.post(f"/clips/{clip.id}", data=base)  # sem o campo: mantém 60 e não re-renderiza
+    assert queued["renders"] == [clip.id]
+    with db.session() as s:
+        assert s.get(Clip, clip.id).music_level == 60
+    assert client.post(f"/clips/{clip.id}", data={**base, "music_level": "500"}).status_code == 422
+
+
+def test_card_shows_music_level_controls(client, done_job):
+    _library("a.mp3")
+    _, clip = done_job
+    db.update_clip(clip.id, music_track="a.mp3", music_level=125)
+    html = client.get(f"/clips/{clip.id}").text
+    assert "125%" in html
+    assert "Música mais baixa" in html and "Música mais alta" in html
+    assert 'name="music_level"' in html

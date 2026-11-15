@@ -174,6 +174,7 @@ def render_clip(clip_id: int) -> Clip:
             job.layout,
             music=track,
             music_offset=music.offset(render.media_duration(track), clip.duration, clip.id) if track else 0.0,  # type: ignore[arg-type]
+            music_volume=_music_volume(job, clip) if track else None,
         )
         write_clip_text(job, clip)
     except Exception as exc:
@@ -190,6 +191,12 @@ def _ensure_music_track(clip: Clip, job: Job) -> Clip:
     if track is None:  # biblioteca vazia: tenta de novo quando houver músicas
         return clip
     return db.update_clip(clip.id, music_track=track)  # type: ignore[arg-type]
+
+
+def _music_volume(job: Job, clip: Clip) -> float:
+    """Música relativa ao áudio do próprio trecho: vídeo baixo ganha música baixa."""
+    loudness = render.measure_loudness(job_dir(job) / job.source_file, clip.start, clip.duration)  # type: ignore[operator]
+    return render.auto_music_volume(loudness, level=clip.music_level)
 
 
 def _music_file(clip: Clip):

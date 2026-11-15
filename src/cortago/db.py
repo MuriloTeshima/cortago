@@ -101,6 +101,8 @@ class Clip(SQLModel, table=True):
     render_version: int = 0
     # None = ainda não escolhida (sorteia no render); "" = sem música; senão, nome do arquivo em MUSIC_DIR.
     music_track: str | None = None
+    # Ajuste manual do volume da música em % sobre o nível automático (100 = automático).
+    music_level: int = 100
 
     @property
     def duration(self) -> float:

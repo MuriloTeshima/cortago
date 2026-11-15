@@ -11,6 +11,13 @@ LAYOUTS: tuple[str, ...] = ("blur", "crop")
 DUCK_THRESHOLD = 0.07
 DUCK_RATIO = 4
 
+# A música é normalizada nesse nível antes do volume (loudnorm no filtro de áudio).
+MUSIC_REF_LUFS = -16.0
+# Limites do nível da música nas pausas, pra vídeos muito altos ou muito baixos não gerarem extremos.
+MUSIC_MIN_LUFS, MUSIC_MAX_LUFS = -40.0, -20.0
+# Nível usado quando o vídeo não tem áudio (a música vira o único som).
+MUSIC_NO_VOICE_LUFS = -20.0
+
 
 def _video_filter(layout: str, ass_name: str) -> str:
     W, H = config.OUT_W, config.OUT_H
@@ -31,7 +38,7 @@ def _audio_filter(duration: float, has_voice: bool, volume: float) -> str:
     fade_out = max(duration - 1.5, 0)
     music = (
         # loudnorm deixa toda faixa no mesmo nível (-16 LUFS) antes do volume, independente da masterização.
-        f"[1:a]aresample=48000,loudnorm=I=-16:TP=-1.5:LRA=11,aresample=48000,volume={volume:.3f},"
+        f"[1:a]aresample=48000,loudnorm=I={MUSIC_REF_LUFS:g}:TP=-1.5:LRA=11,aresample=48000,volume={volume:.3f},"
         f"afade=t=in:d=1,afade=t=out:st={fade_out:.3f}:d=1.5[music]"
     )
     if not has_voice:
@@ -68,7 +75,7 @@ def render_clip(
     if music is not None:
         # -stream_loop repete a faixa se ela for mais curta que o corte.
         inputs += ["-stream_loop", "-1", "-ss", f"{music_offset:.3f}", "-i", str(music.resolve())]
-        volume = config.MUSIC_VOLUME if music_volume is None else music_volume
+        volume = auto_music_volume(None) if music_volume is None else music_volume
         graph += ";" + _audio_filter(duration, has_audio(source), volume)
         audio_map = ["-map", "[a]"]
 
@@ -133,3 +140,54 @@ def media_duration(path: Path) -> float:
         text=True,
     ).stdout
     return float(out.strip())
+
+
+def auto_music_volume(video_lufs: float | None, gap_db: float | None = None, level: int = 100) -> float:
+    """Volume (multiplicador) da música pra ela ficar `gap_db` abaixo do áudio do vídeo.
+
+    `level` é o ajuste manual do corte em % (100 = automático, 0 = muda).
+    """
+    gap = config.MUSIC_GAP_DB if gap_db is None else gap_db
+    target = MUSIC_NO_VOICE_LUFS if video_lufs is None else video_lufs - gap
+    target = min(max(target, MUSIC_MIN_LUFS), MUSIC_MAX_LUFS)
+    return 10 ** ((target - MUSIC_REF_LUFS) / 20) * max(level, 0) / 100
+
+
+def measure_loudness(path: Path, start: float, duration: float) -> float | None:
+    """Loudness integrado (LUFS) do áudio no trecho, ou None se não houver áudio audível."""
+    if not has_audio(path):
+        return None
+    out = subprocess.run(
+        [
+            "ffmpeg",
+            "-hide_banner",
+            "-nostats",
+            "-ss",
+            f"{start:.3f}",
+            "-t",
+            f"{duration:.3f}",
+            "-i",
+            str(path),
+            "-vn",
+            "-af",
+            "ebur128",
+            "-f",
+            "null",
+            "-",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stderr
+    return parse_integrated_loudness(out)
+
+
+def parse_integrated_loudness(ebur128_log: str) -> float | None:
+    """Extrai o 'I: -15.2 LUFS' do resumo do filtro ebur128 do FFmpeg."""
+    import re
+
+    values = re.findall(r"^\s*I:\s*(-?[\d.]+|-inf)\s*LUFS", ebur128_log, flags=re.MULTILINE)
+    if not values or values[-1] == "-inf":
+        return None
+    value = float(values[-1])
+    return None if value <= -69 else value

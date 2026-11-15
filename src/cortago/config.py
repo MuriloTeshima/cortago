@@ -24,6 +24,6 @@ OUT_W, OUT_H = 1080, 1920
 # Músicas de fundo: coloque faixas livres de direitos (ex.: Biblioteca de áudio do YouTube) nesta pasta.
 # Um .txt com o mesmo nome da faixa vira o crédito na descrição do corte.
 MUSIC_DIR = Path(os.getenv("CORTAGO_MUSIC_DIR", DATA_DIR / "music"))
-# Volume da música (0–1) aplicado depois de normalizar a faixa em -16 LUFS. 0.3 ≈ -26 LUFS nas pausas.
-# Durante a fala ela abaixa mais uns 10–15 dB sozinha (ducking).
-MUSIC_VOLUME = float(os.getenv("CORTAGO_MUSIC_VOLUME", "0.3"))
+# Quantos dB a música fica abaixo do áudio do vídeo (medido em cada corte). Maior = música mais baixa.
+# Durante a fala ela abaixa mais ~10 dB sozinha (ducking). Ajuste fino por corte é feito na interface.
+MUSIC_GAP_DB = float(os.getenv("CORTAGO_MUSIC_GAP_DB", "12"))

@@ -8,6 +8,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 - Música de fundo: cada corte recebe uma faixa sorteada da biblioteca `data/music/`, normalizada,
   com fade e ducking (abaixa ~10 dB durante a fala, igual pra vídeos gravados alto ou baixo).
 - Trocar ou remover a música na edição do corte; opção "Música de fundo" ao criar o job e `--no-music` na CLI.
+- Volume da música automático e relativo ao áudio de cada trecho (fica `CORTAGO_MUSIC_GAP_DB` dB abaixo),
+  pra música não sobressair em vídeos gravados baixo.
+- Editor de volume da música por corte: botões − / + no card e controle de 0–150% na edição.
 - Crédito da música (arquivo `.txt` ao lado da faixa) incluído automaticamente na descrição.
 - Migração automática do banco para colunas novas (mudanças aditivas).
 

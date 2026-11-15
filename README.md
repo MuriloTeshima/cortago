@@ -35,7 +35,12 @@ sorteada, começando num ponto aleatório, com fade e ducking: a música abaixa 
 volta nas pausas. Dá pra trocar a faixa ou tirar a música na edição do corte.
 
 Se a faixa exige atribuição, crie um `.txt` com o mesmo nome (`Faixa.mp3` → `Faixa.txt`) contendo o
-crédito; ele entra automaticamente na descrição. Volume geral: `CORTAGO_MUSIC_VOLUME` (padrão `0.3`).
+crédito; ele entra automaticamente na descrição.
+
+O volume é automático e relativo ao vídeo: o CortaGo mede o áudio de cada trecho e deixa a música
+`CORTAGO_MUSIC_GAP_DB` dB abaixo dele (padrão `12`), então vídeos gravados baixo ganham música baixa.
+Se ainda assim a música sobressair num corte, use os botões **− / +** ao lado do nome da faixa
+(passos de 25%) ou o controle "Volume da música" na edição (0–150%, 100% = automático).
 
 > Não use música comercial: gera claim no Content ID e pode desmonetizar ou derrubar o vídeo.
 
