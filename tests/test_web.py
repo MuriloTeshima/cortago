@@ -325,3 +325,11 @@ def test_edit_form_has_music_preview(client, done_job):
     html = client.get(f"/clips/{clip.id}").text
     assert f'data-music-preview="#preview-{clip.id}"' in html
     assert 'src="/music/a%20b.mp3"' in html
+
+
+def test_brand_assets_are_served(client):
+    html = client.get("/").text
+    assert 'href="/static/brand/favicon.ico"' in html
+    assert 'src="/static/brand/logo.png" alt="CortaGo"' in html
+    for path in ("favicon.ico", "icon-32.png", "apple-touch-icon.png", "logo.png"):
+        assert client.get(f"/static/brand/{path}").status_code == 200

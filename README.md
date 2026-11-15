@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.png">
+    <img src="docs/assets/logo-light.png" alt="CortaGo" width="420">
+  </picture>
+</p>
+
 # CortaGo
 
 Transforma um vídeo longo em Shorts 9:16 legendados, rodando localmente no seu computador:

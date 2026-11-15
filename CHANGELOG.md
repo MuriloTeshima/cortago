@@ -14,6 +14,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
   (VideoToolbox, NVENC, Quick Sync, AMF ou libx264).
 - `cortago doctor`: mostra o hardware detectado e o que está faltando (FFmpeg, libass, chave da API).
 - Instruções de instalação para Windows e Linux. CI roda nos três sistemas.
+- Identidade visual: logo no cabeçalho da interface e no README (versões para tema claro e escuro),
+  favicon e ícones do app.
 - Licença MIT.
 - Prévia das músicas: player na edição do corte que toca a faixa escolhida antes de salvar, e página
   `/musicas` com todas as faixas da biblioteca (link na página inicial).
