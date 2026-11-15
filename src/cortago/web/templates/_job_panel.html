@@ -1,0 +1,43 @@
+<section id="job-panel"
+  {% if job.status.running %}hx-get="/jobs/{{ job.id }}/panel" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+  <div class="card job-header">
+    <div>
+      <h1>{{ job.display_title }}</h1>
+      <p class="muted">
+        {% if job.url %}<a href="{{ job.url }}" target="_blank" rel="noopener">{{ job.channel }}</a>{% else %}{{ job.channel or job.source }}{% endif %}
+        {% if job.duration %} · {{ job.duration | time }}{% endif %}
+        · layout {{ job.layout }} · {{ job.min_seconds }}–{{ job.max_seconds }}s
+        {% if job.input_tokens %} · {{ job.input_tokens }} / {{ job.output_tokens }} tokens{% endif %}
+      </p>
+    </div>
+    <div class="actions">
+      <span class="badge status-{{ job.status }}">
+        {% if job.status.running %}<i class="spinner"></i>{% endif %}{{ STATUS_LABELS[job.status] }}
+      </span>
+      {% if job.status == "error" %}
+        <button class="btn" hx-post="/jobs/{{ job.id }}/retry" hx-target="#job-panel" hx-swap="outerHTML">Tentar de novo</button>
+      {% endif %}
+      {% if not job.status.running %}
+        <button class="btn" hx-post="/jobs/{{ job.id }}/reselect" hx-target="#job-panel" hx-swap="outerHTML"
+                hx-confirm="Pedir novos cortes ao Claude? Os cortes atuais e suas edições serão apagados.">Escolher de novo</button>
+        <button class="btn danger" hx-post="/jobs/{{ job.id }}/delete"
+                hx-confirm="Apagar este vídeo e todos os cortes?">Apagar</button>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if job.error %}
+    <div class="card error"><strong>Erro:</strong> <code>{{ job.error }}</code></div>
+  {% endif %}
+
+  {% if clips %}
+    <div class="clips">
+      {% for clip in clips %}
+        {% set transcript = transcripts.get(clip.id, "") %}
+        {% include "_clip_card.html" %}
+      {% endfor %}
+    </div>
+  {% elif job.status.running %}
+    <p class="muted">Os cortes aparecem aqui assim que o Claude terminar de escolher.</p>
+  {% endif %}
+</section>

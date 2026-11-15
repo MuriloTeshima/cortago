@@ -1,0 +1,17 @@
+{% set busy = jobs | selectattr("status.running") | list %}
+<div id="jobs-list"
+     {% if busy %}hx-get="/jobs/list" hx-trigger="every 3s" hx-swap="outerHTML"{% endif %}>
+  {% if not jobs %}
+    <p class="muted">Nenhum vídeo ainda. Cole uma URL acima pra começar.</p>
+  {% endif %}
+  {% for job in jobs %}
+    <a class="job-row" href="/jobs/{{ job.id }}">
+      <div class="job-title">
+        <strong>{{ job.display_title }}</strong>
+        <span class="muted">{{ job.channel or "" }}{% if job.duration %} · {{ job.duration | time }}{% endif %}</span>
+      </div>
+      <span class="badge status-{{ job.status }}">{{ STATUS_LABELS[job.status] }}</span>
+      <span class="muted small">{{ job.created_at | local }}</span>
+    </a>
+  {% endfor %}
+</div>

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h1>Novo vídeo</h1>
+  <form method="post" action="/jobs" class="new-job">
+    <label class="field grow">
+      <span>URL do vídeo ou caminho de arquivo</span>
+      <input name="source" required autofocus placeholder="https://www.youtube.com/watch?v=...">
+    </label>
+    <div class="row">
+      <label class="field"><span>Cortes</span>
+        <input type="number" name="max_clips" value="5" min="1" max="20">
+      </label>
+      <label class="field"><span>Layout</span>
+        <select name="layout">
+          <option value="blur">Inteiro + fundo desfocado</option>
+          <option value="crop">Cortar centro</option>
+        </select>
+      </label>
+      <label class="field"><span>Idioma do áudio</span>
+        <select name="language">
+          <option value="">Detectar</option>
+          <option value="pt">Português</option>
+          <option value="en">Inglês</option>
+          <option value="es">Espanhol</option>
+        </select>
+      </label>
+      <label class="field"><span>Mín. (s)</span>
+        <input type="number" name="min_seconds" value="20" min="5" max="170">
+      </label>
+      <label class="field"><span>Máx. (s)</span>
+        <input type="number" name="max_seconds" value="60" min="10" max="180">
+      </label>
+    </div>
+    <button class="btn primary" type="submit">Gerar cortes</button>
+  </form>
+</section>
+
+<section>
+  <h2>Vídeos</h2>
+  {% include "_jobs_list.html" %}
+</section>
+{% endblock %}

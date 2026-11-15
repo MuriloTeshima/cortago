@@ -9,7 +9,6 @@ from pydantic import BaseModel
 
 
 class SourceInfo(BaseModel):
-    id: str
     title: str
     channel: str
     url: str
@@ -17,35 +16,36 @@ class SourceInfo(BaseModel):
     path: Path
 
 
-def _slug(text: str) -> str:
+def slug(text: str) -> str:
     keep = "".join(c if c.isalnum() else "-" for c in text.lower())
     return "-".join(filter(None, keep.split("-")))[:60] or "video"
 
 
-def fetch(source: str, jobs_dir: Path) -> SourceInfo:
-    local = Path(source).expanduser()
-    if local.exists():
-        return _from_local(local, jobs_dir)
-    return _from_url(source, jobs_dir)
+def is_local(source: str) -> bool:
+    return Path(source).expanduser().exists()
 
 
-def _from_local(path: Path, jobs_dir: Path) -> SourceInfo:
-    job_dir = jobs_dir / _slug(path.stem)
+def fetch(source: str, job_dir: Path) -> SourceInfo:
     job_dir.mkdir(parents=True, exist_ok=True)
-    target = job_dir / f"source{path.suffix}"
+    if is_local(source):
+        return _from_local(Path(source).expanduser(), job_dir)
+    return _from_url(source, job_dir)
+
+
+def _from_local(path: Path, job_dir: Path) -> SourceInfo:
+    target = job_dir / f"source{path.suffix.lower()}"
     if not target.exists():
         shutil.copy2(path, target)
     return SourceInfo(
-        id=job_dir.name,
         title=path.stem,
         channel="(arquivo local)",
         url="",
-        duration=_probe_duration(target),
+        duration=probe_duration(target),
         path=target,
     )
 
 
-def _from_url(url: str, jobs_dir: Path) -> SourceInfo:
+def _from_url(url: str, job_dir: Path) -> SourceInfo:
     meta = json.loads(
         subprocess.run(
             ["yt-dlp", "--dump-single-json", "--no-playlist", url],
@@ -54,8 +54,6 @@ def _from_url(url: str, jobs_dir: Path) -> SourceInfo:
             text=True,
         ).stdout
     )
-    job_dir = jobs_dir / meta["id"]
-    job_dir.mkdir(parents=True, exist_ok=True)
     target = job_dir / "source.mp4"
 
     if not target.exists():
@@ -63,6 +61,7 @@ def _from_url(url: str, jobs_dir: Path) -> SourceInfo:
             [
                 "yt-dlp",
                 "--no-playlist",
+                "--quiet",
                 "-f",
                 "bv*[height<=1080][ext=mp4]+ba[ext=m4a]/bv*[height<=1080]+ba/b",
                 "--merge-output-format",
@@ -72,19 +71,20 @@ def _from_url(url: str, jobs_dir: Path) -> SourceInfo:
                 url,
             ],
             check=True,
+            capture_output=True,
+            text=True,
         )
 
     return SourceInfo(
-        id=meta["id"],
         title=meta.get("title", ""),
         channel=meta.get("channel") or meta.get("uploader") or "",
         url=meta.get("webpage_url", url),
-        duration=float(meta.get("duration") or _probe_duration(target)),
+        duration=float(meta.get("duration") or probe_duration(target)),
         path=target,
     )
 
 
-def _probe_duration(path: Path) -> float:
+def probe_duration(path: Path) -> float:
     out = subprocess.run(
         ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
         check=True,
