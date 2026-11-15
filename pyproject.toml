@@ -1,0 +1,43 @@
+[project]
+name = "cortago"
+version = "0.1.0"
+description = "Gera Shorts automaticamente a partir de vídeos longos"
+readme = "README.md"
+authors = [
+    { name = "Murilo Teshima", email = "muriloteshimalira@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=2.8.0",
+    "mlx-whisper>=0.4.3; sys_platform == 'darwin'",
+    "pydantic>=2.14.3",
+    "python-dotenv>=1.2.4",
+    "rich>=15.0.0",
+    "typer>=0.29.1",
+]
+
+[project.scripts]
+cortago = "cortago.cli:app"
+
+[build-system]
+requires = ["uv_build>=0.13.8,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+    "ruff>=0.17.5",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/cortago/subtitles.py" = ["E501"]  # linhas do formato ASS não podem ser quebradas
