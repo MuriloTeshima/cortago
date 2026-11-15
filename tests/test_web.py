@@ -150,3 +150,121 @@ def test_local_time_filter_converts_naive_utc():
 
     naive = datetime(2026, 11, 15, 2, 43)
     assert _local(naive) == naive.replace(tzinfo=UTC).astimezone().strftime("%d/%m %H:%M")
+
+
+def _library(*names):
+    from cortago import config
+
+    config.MUSIC_DIR.mkdir(parents=True, exist_ok=True)
+    for name in names:
+        (config.MUSIC_DIR / name).write_bytes(b"audio")
+
+
+def test_music_checkbox(client):
+    r = client.post("/jobs", data={"source": "x", "music": "true"}, follow_redirects=False)
+    assert db.get_job(int(r.headers["location"].rsplit("/", 1)[1])).music is True
+    r = client.post("/jobs", data={"source": "y"}, follow_redirects=False)  # desmarcado = ausente
+    assert db.get_job(int(r.headers["location"].rsplit("/", 1)[1])).music is False
+
+
+def test_index_shows_music_library_state(client):
+    assert "biblioteca vazia" in client.get("/").text
+    _library("Epic_Trailer.mp3")
+    r = client.get("/").text
+    assert "1 faixa na biblioteca" in r
+    assert 'name="music" value="true" checked' in r
+
+
+def test_change_music_rerenders(client, queued, done_job):
+    _library("a.mp3", "b.mp3")
+    _, clip = done_job
+    base = {
+        "title": "Detalhe",
+        "hook": "olha",
+        "description": "d",
+        "hashtags": "gta6",
+        "start": "10",
+        "end": "40",
+    }
+    client.post(f"/clips/{clip.id}", data={**base, "music_track": "b.mp3"})
+    assert queued["renders"] == [clip.id]
+    with db.session() as s:
+        assert s.get(Clip, clip.id).music_track == "b.mp3"
+
+    client.post(f"/clips/{clip.id}", data={**base, "music_track": "b.mp3"})  # sem mudança
+    assert queued["renders"] == [clip.id]
+
+    client.post(f"/clips/{clip.id}", data={**base, "music_track": "__none__"})  # sem música
+    assert queued["renders"] == [clip.id, clip.id]
+    with db.session() as s:
+        assert s.get(Clip, clip.id).music_track == ""
+
+
+def test_unknown_music_track_is_rejected(client, done_job):
+    _, clip = done_job
+    form = {"title": "t", "start": "10", "end": "40", "music_track": "../../cortago.db"}
+    assert client.post(f"/clips/{clip.id}", data=form).status_code == 400
+
+
+def test_card_shows_track_and_selector(client, done_job):
+    _library("Epic_Trailer.mp3")
+    _, clip = done_job
+    db.update_clip(clip.id, music_track="Epic_Trailer.mp3")
+    html = client.get(f"/clips/{clip.id}").text
+    assert "♪ Epic Trailer" in html
+    assert '<option value="Epic_Trailer.mp3" selected>' in html
+
+
+def test_music_level_quick_buttons(client, queued, done_job):
+    _library("a.mp3")
+    _, clip = done_job
+    db.update_clip(clip.id, music_track="a.mp3")
+
+    r = client.post(f"/clips/{clip.id}/music-level", data={"delta": -25})
+    assert r.status_code == 200
+    with db.session() as s:
+        assert s.get(Clip, clip.id).music_level == 75
+    assert queued["renders"] == [clip.id]
+
+    for _ in range(5):  # não passa de 0
+        client.post(f"/clips/{clip.id}/music-level", data={"delta": -25})
+    with db.session() as s:
+        assert s.get(Clip, clip.id).music_level == 0
+    assert len(queued["renders"]) == 4  # 75 → 50 → 25 → 0; os cliques no limite não re-renderizam
+
+
+def test_music_level_requires_music(client, done_job):
+    _, clip = done_job
+    assert client.post(f"/clips/{clip.id}/music-level", data={"delta": 25}).status_code == 400
+
+
+def test_edit_form_music_level(client, queued, done_job):
+    _library("a.mp3")
+    _, clip = done_job
+    db.update_clip(clip.id, music_track="a.mp3")
+    base = {
+        "title": "Detalhe",
+        "hook": "olha",
+        "description": "d",
+        "hashtags": "gta6",
+        "start": "10",
+        "end": "40",
+    }
+
+    client.post(f"/clips/{clip.id}", data={**base, "music_level": "60"})
+    assert queued["renders"] == [clip.id]
+    client.post(f"/clips/{clip.id}", data=base)  # sem o campo: mantém 60 e não re-renderiza
+    assert queued["renders"] == [clip.id]
+    with db.session() as s:
+        assert s.get(Clip, clip.id).music_level == 60
+    assert client.post(f"/clips/{clip.id}", data={**base, "music_level": "500"}).status_code == 422
+
+
+def test_card_shows_music_level_controls(client, done_job):
+    _library("a.mp3")
+    _, clip = done_job
+    db.update_clip(clip.id, music_track="a.mp3", music_level=125)
+    html = client.get(f"/clips/{clip.id}").text
+    assert "125%" in html
+    assert "Música mais baixa" in html and "Música mais alta" in html
+    assert 'name="music_level"' in html

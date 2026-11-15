@@ -26,6 +26,20 @@
     </div>
     <h3>{{ clip.title }}</h3>
     <p class="muted small">{{ clip.reason }}</p>
+    {% if clip.music_track %}
+      <div class="music-row">
+        <span class="small music">♪ {{ music_name(clip.music_track) }}</span>
+        <span class="music-level small" title="Volume da música em relação ao automático">{{ clip.music_level }}%</span>
+        <button class="btn icon" title="Música mais baixa" aria-label="Música mais baixa"
+                {% if busy or clip.music_level <= 0 %}disabled{% endif %}
+                hx-post="/clips/{{ clip.id }}/music-level" hx-vals='{"delta": -{{ MUSIC_LEVEL_STEP }}}'
+                hx-target="#clip-{{ clip.id }}" hx-swap="outerHTML">−</button>
+        <button class="btn icon" title="Música mais alta" aria-label="Música mais alta"
+                {% if busy or clip.music_level >= MAX_MUSIC_LEVEL %}disabled{% endif %}
+                hx-post="/clips/{{ clip.id }}/music-level" hx-vals='{"delta": {{ MUSIC_LEVEL_STEP }}}'
+                hx-target="#clip-{{ clip.id }}" hx-swap="outerHTML">+</button>
+      </div>
+    {% endif %}
 
     <div class="actions">
       {% if clip.status != "approved" %}
@@ -57,7 +71,24 @@
           <label class="field"><span>Início (s)</span><input type="number" step="0.1" min="0" name="start" value="{{ '%.1f' | format(clip.start) }}"></label>
           <label class="field"><span>Fim (s)</span><input type="number" step="0.1" min="0" name="end" value="{{ '%.1f' | format(clip.end) }}"></label>
         </div>
-        <p class="muted small">Mudar início, fim ou gancho renderiza o vídeo de novo.</p>
+        {% set tracks = music_tracks() %}
+        <label class="field"><span>Música de fundo</span>
+          <select name="music_track">
+            <option value="{{ NO_MUSIC }}" {% if not clip.music_track %}selected{% endif %}>Sem música</option>
+            {% for t in tracks %}
+              <option value="{{ t }}" {% if t == clip.music_track %}selected{% endif %}>{{ music_name(t) }}</option>
+            {% endfor %}
+            {% if clip.music_track and clip.music_track not in tracks %}
+              <option disabled>{{ music_name(clip.music_track) }} (removida da biblioteca)</option>
+            {% endif %}
+          </select>
+        </label>
+        <label class="field"><span>Volume da música: <output>{{ clip.music_level }}</output>%
+            <span class="muted">(100% = automático, abaixo do áudio do vídeo)</span></span>
+          <input type="range" name="music_level" min="0" max="{{ MAX_MUSIC_LEVEL }}" step="5"
+                 value="{{ clip.music_level }}" oninput="this.previousElementSibling.querySelector('output').value = this.value">
+        </label>
+        <p class="muted small">Mudar início, fim, gancho, música ou volume renderiza o vídeo de novo.</p>
         <button class="btn primary" type="submit">Salvar</button>
       </form>
     </details>

@@ -20,3 +20,10 @@ VIDEO_ENCODER = os.getenv("CORTAGO_VIDEO_ENCODER", "h264_videotoolbox")
 VIDEO_BITRATE = os.getenv("CORTAGO_VIDEO_BITRATE", "8M")
 
 OUT_W, OUT_H = 1080, 1920
+
+# Músicas de fundo: coloque faixas livres de direitos (ex.: Biblioteca de áudio do YouTube) nesta pasta.
+# Um .txt com o mesmo nome da faixa vira o crédito na descrição do corte.
+MUSIC_DIR = Path(os.getenv("CORTAGO_MUSIC_DIR", DATA_DIR / "music"))
+# Quantos dB a música fica abaixo do áudio do vídeo (medido em cada corte). Maior = música mais baixa.
+# Durante a fala ela abaixa mais ~10 dB sozinha (ducking). Ajuste fino por corte é feito na interface.
+MUSIC_GAP_DB = float(os.getenv("CORTAGO_MUSIC_GAP_DB", "12"))
