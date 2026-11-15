@@ -6,7 +6,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from cortago import db, pipeline
+from cortago import config, db, pipeline
 from cortago.db import ClipStatus
 
 app = typer.Typer(add_completion=False, help="Gera Shorts automaticamente a partir de vídeos longos.")
@@ -16,6 +16,57 @@ console = Console()
 @app.callback()
 def main() -> None:
     pass
+
+
+@app.command()
+def doctor() -> None:
+    """Mostra o que foi detectado neste computador e o que está faltando."""
+    import os
+    import platform
+    import subprocess
+
+    from cortago import hardware, music
+
+    table = Table("Item", "Situação", show_header=False)
+    ok, bad = "[green]✓[/]", "[red]✗[/]"
+    problems = 0
+
+    table.add_row("Sistema", f"{platform.system()} {platform.release()} ({platform.machine()})")
+
+    ffmpeg = hardware.ffmpeg_path()
+    if ffmpeg:
+        filters = subprocess.run(
+            ["ffmpeg", "-hide_banner", "-filters"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        ).stdout
+        has_ass = " ass " in filters
+        table.add_row(
+            "FFmpeg", f"{ok} {ffmpeg}" + ("" if has_ass else f"  {bad} sem libass (legendas não funcionam)")
+        )
+        problems += not has_ass
+        table.add_row("Encoder de vídeo", hardware.video_encoder())
+    else:
+        table.add_row("FFmpeg", f"{bad} não encontrado no PATH (veja o README)")
+        problems += 1
+
+    setup = hardware.whisper_setup()
+    device = {"apple-gpu": "GPU Apple", "cuda": "GPU NVIDIA", "cpu": "CPU (mais lento)"}[setup.device]
+    table.add_row("Transcrição", f"{setup.backend} · {device} · {setup.model}")
+
+    has_key = bool(os.getenv("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_AUTH_TOKEN"))
+    table.add_row("Chave da API do Claude", ok if has_key else f"{bad} defina ANTHROPIC_API_KEY no .env")
+    problems += not has_key
+
+    tracks = music.tracks()
+    table.add_row("Músicas de fundo", f"{len(tracks)} em {config.MUSIC_DIR}")
+    console.print(table)
+    if problems:
+        console.print(f"[red]{problems} problema(s) para resolver.[/]")
+        raise typer.Exit(1)
+    console.print("[green]Tudo pronto.[/]")
 
 
 @app.command()

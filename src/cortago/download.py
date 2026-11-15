@@ -1,6 +1,5 @@
 """Baixa o vídeo de origem com yt-dlp (ou aceita um arquivo local)."""
 
-import json
 import shutil
 import subprocess
 from pathlib import Path
@@ -46,34 +45,20 @@ def _from_local(path: Path, job_dir: Path) -> SourceInfo:
 
 
 def _from_url(url: str, job_dir: Path) -> SourceInfo:
-    meta = json.loads(
-        subprocess.run(
-            ["yt-dlp", "--dump-single-json", "--no-playlist", url],
-            check=True,
-            capture_output=True,
-            text=True,
-        ).stdout
-    )
-    target = job_dir / "source.mp4"
+    import yt_dlp  # biblioteca Python: funciona igual em qualquer sistema, sem depender do PATH
 
-    if not target.exists():
-        subprocess.run(
-            [
-                "yt-dlp",
-                "--no-playlist",
-                "--quiet",
-                "-f",
-                "bv*[height<=1080][ext=mp4]+ba[ext=m4a]/bv*[height<=1080]+ba/b",
-                "--merge-output-format",
-                "mp4",
-                "-o",
-                str(target),
-                url,
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
+    target = job_dir / "source.mp4"
+    options = {
+        "noplaylist": True,
+        "quiet": True,
+        "no_warnings": True,
+        "noprogress": True,
+        "format": "bv*[height<=1080][ext=mp4]+ba[ext=m4a]/bv*[height<=1080]+ba/b",
+        "merge_output_format": "mp4",
+        "outtmpl": str(target),
+    }
+    with yt_dlp.YoutubeDL(options) as ydl:
+        meta = ydl.extract_info(url, download=not target.exists())
 
     return SourceInfo(
         title=meta.get("title", ""),
@@ -90,5 +75,7 @@ def probe_duration(path: Path) -> float:
         check=True,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
     ).stdout
     return float(out.strip())

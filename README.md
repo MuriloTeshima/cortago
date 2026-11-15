@@ -1,19 +1,63 @@
 # CortaGo
 
-Transforma um vídeo longo em Shorts 9:16 legendados, rodando localmente no Mac (Apple Silicon).
+Transforma um vídeo longo em Shorts 9:16 legendados, rodando localmente no seu computador:
+**macOS, Windows ou Linux**. A ferramenta detecta o hardware e usa o melhor caminho disponível.
 
 ```text
 URL/arquivo → yt-dlp → mlx-whisper (timestamps por palavra) → Claude escolhe os cortes
             → legendas .ass animadas → FFmpeg (9:16, encoder de hardware) → clips/*.mp4 + *.txt
 ```
 
-## Setup
+## Instalação
+
+Precisa de **uv** (gerenciador do Python) e **FFmpeg com libass** (para as legendas). O resto
+(yt-dlp, Whisper etc.) o `uv sync` instala.
+
+**macOS**
 
 ```bash
-brew install uv yt-dlp ffmpeg
-uv sync
-cp .env.example .env   # coloque sua ANTHROPIC_API_KEY
+brew install uv ffmpeg
 ```
+
+**Windows** (PowerShell)
+
+```powershell
+winget install --id=astral-sh.uv -e
+winget install --id=Gyan.FFmpeg -e   # build completa: inclui libass e encoders NVIDIA/Intel/AMD
+```
+
+Feche e abra o terminal depois de instalar, para o PATH ser atualizado.
+
+**Linux** (Debian/Ubuntu)
+
+```bash
+sudo apt install ffmpeg
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+**Em todos**
+
+```bash
+uv sync
+cp .env.example .env      # no Windows: copy .env.example .env  — e coloque sua ANTHROPIC_API_KEY
+uv run cortago doctor     # mostra o que foi detectado e o que está faltando
+```
+
+### O que é usado em cada computador
+
+| Computador | Transcrição (Whisper) | Encoder de vídeo |
+| --- | --- | --- |
+| Mac com chip Apple (M1 ou mais novo) | MLX na GPU Apple | VideoToolbox |
+| Placa NVIDIA | faster-whisper na GPU (CUDA) | NVENC |
+| Intel / AMD com vídeo integrado | faster-whisper na CPU | Quick Sync / AMF |
+| Qualquer outro | faster-whisper na CPU | libx264 |
+
+- **GPU NVIDIA na transcrição** exige CUDA 12 e cuDNN 9 instalados (ver a documentação do faster-whisper).
+  Sem eles, a ferramenta avisa e transcreve na CPU automaticamente.
+- **Só CPU** funciona, mas é mais lento: a transcrição pode levar perto da duração do vídeo. Num PC
+  modesto, `CORTAGO_WHISPER_MODEL=small` acelera bastante com alguma perda de precisão.
+- Para forçar algo: `CORTAGO_WHISPER_BACKEND` (`mlx` | `faster-whisper`), `CORTAGO_WHISPER_MODEL`,
+  `CORTAGO_VIDEO_ENCODER` (`libx264`, `h264_nvenc`, `h264_videotoolbox`…).
 
 ## Uso
 
@@ -90,8 +134,9 @@ Os dados ficam em `data/`: o banco `cortago.db` e uma pasta por job em `data/job
 - `worker.py`: fila em segundo plano da interface web (uma tarefa por vez)
 - `web/`: FastAPI + templates Jinja/HTMX
 - `music.py`: biblioteca de músicas de fundo (sorteio, créditos)
-- `download.py`: yt-dlp ou arquivo local
-- `transcribe.py`: mlx-whisper large-v3-turbo
+- `hardware.py`: detecta o computador e escolhe transcrição e encoder
+- `download.py`: yt-dlp (biblioteca) ou arquivo local
+- `transcribe.py`: Whisper large-v3-turbo via MLX (Mac Apple) ou faster-whisper (demais)
 - `highlights.py`: prompt + structured output do Claude, ajuste dos cortes às bordas das palavras
 - `subtitles.py`: legendas estilo Shorts (3 palavras, palavra atual em amarelo, gancho no topo)
 - `render.py`: filtros FFmpeg dos layouts e mixagem da música (loudnorm + sidechain ducking)
