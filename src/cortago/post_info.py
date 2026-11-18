@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from cortago import config, music
+from cortago import config, music, timecode
 from cortago.db import Clip, Job
 
 # Limites do formulário do YouTube Studio.
@@ -53,7 +53,9 @@ def build_tags(clip: Clip) -> str:
 
 
 def build_description(clip: Clip, job: Job) -> str:
-    credit = f"Créditos: {job.channel}" + (f" — {job.url}" if job.url else "")
+    # O link abre o vídeo original no instante do corte (YouTube e Twitch).
+    link = timecode.at(job.url, job.source_offset + clip.start) if job.url else None
+    credit = f"Créditos: {job.channel}" + (f" — {link}" if link else "")
     music_credit = music.credit(clip.music_track) if clip.music_track else None
     if music_credit:
         credit += f"\nMúsica: {music_credit}"

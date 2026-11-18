@@ -65,10 +65,22 @@ class Job(SQLModel, table=True):
     language: str | None = None
     music: bool = True  # sortear música de fundo para os cortes
 
+    # Trecho a processar, em segundos do vídeo original (None = do começo / até o fim).
+    range_start: float | None = None
+    range_end: float | None = None
+    # Em que segundo do vídeo original o arquivo baixado começa (> 0 quando só o trecho foi baixado).
+    source_offset: float = 0.0
+
     input_tokens: int = 0
     output_tokens: int = 0
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)
+
+    def window(self) -> tuple[float, float | None]:
+        """Trecho a processar, em segundos do arquivo baixado (fim None = até o fim do arquivo)."""
+        start = max((self.range_start or 0.0) - self.source_offset, 0.0)
+        end = None if self.range_end is None else self.range_end - self.source_offset
+        return start, end
 
     @property
     def dir_name(self) -> str:

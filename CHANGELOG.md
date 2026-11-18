@@ -4,6 +4,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+### Adicionado
+- Processar só um trecho do vídeo: campos "começa em / termina em" na criação (e `--inicio/--fim` na CLI),
+  aceitando `1:20:00`, `80:00`, `4800` ou `1h20m`. Em links, só o trecho é baixado quando o site permite;
+  senão, baixa inteiro e transcreve só o trecho.
+- Créditos com o link no instante do corte no vídeo original (YouTube e Twitch).
+
+### Alterado
+- Tempos dos cortes (no card e na edição) aparecem no relógio do vídeo original, mesmo quando só um trecho foi baixado.
+
 ## [0.4.0] - 2026-11-17
 
 ### Adicionado

@@ -11,8 +11,9 @@ class SourceInfo(BaseModel):
     title: str
     channel: str
     url: str
-    duration: float
+    duration: float  # duração do vídeo original inteiro
     path: Path
+    offset: float = 0.0  # segundo do vídeo original em que o arquivo baixado começa
 
 
 def slug(text: str) -> str:
@@ -24,11 +25,12 @@ def is_local(source: str) -> bool:
     return Path(source).expanduser().exists()
 
 
-def fetch(source: str, job_dir: Path) -> SourceInfo:
+def fetch(source: str, job_dir: Path, section: tuple[float, float | None] | None = None) -> SourceInfo:
+    """Baixa o vídeo. Com `section` (início, fim em segundos), links baixam só esse trecho quando o site permite."""
     job_dir.mkdir(parents=True, exist_ok=True)
     if is_local(source):
         return _from_local(Path(source).expanduser(), job_dir)
-    return _from_url(source, job_dir)
+    return _from_url(source, job_dir, section)
 
 
 def _from_local(path: Path, job_dir: Path) -> SourceInfo:
@@ -44,8 +46,20 @@ def _from_local(path: Path, job_dir: Path) -> SourceInfo:
     )
 
 
-def _from_url(url: str, job_dir: Path) -> SourceInfo:
+def _from_url(url: str, job_dir: Path, section: tuple[float, float | None] | None = None) -> SourceInfo:
+    if section and (section[0] > 0 or section[1] is not None):
+        try:
+            return _download(url, job_dir, section)
+        except Exception:
+            # Nem todo site aceita baixar só um trecho: baixa inteiro e o trecho é aplicado na transcrição.
+            for leftover in job_dir.glob("source.*"):
+                leftover.unlink()
+    return _download(url, job_dir, None)
+
+
+def _download(url: str, job_dir: Path, section: tuple[float, float | None] | None) -> SourceInfo:
     import yt_dlp  # biblioteca Python: funciona igual em qualquer sistema, sem depender do PATH
+    from yt_dlp.utils import download_range_func
 
     target = job_dir / "source.mp4"
     options = {
@@ -57,8 +71,17 @@ def _from_url(url: str, job_dir: Path) -> SourceInfo:
         "merge_output_format": "mp4",
         "outtmpl": str(target),
     }
+    offset = 0.0
+    if section:
+        start, end = section
+        options["download_ranges"] = download_range_func(
+            None, [(start, end if end is not None else float("inf"))]
+        )
+        offset = start
     with yt_dlp.YoutubeDL(options) as ydl:
         meta = ydl.extract_info(url, download=not target.exists())
+    if not target.exists():
+        raise RuntimeError("o download não gerou o arquivo de vídeo")
 
     return SourceInfo(
         title=meta.get("title", ""),
@@ -66,6 +89,7 @@ def _from_url(url: str, job_dir: Path) -> SourceInfo:
         url=meta.get("webpage_url", url),
         duration=float(meta.get("duration") or probe_duration(target)),
         path=target,
+        offset=offset,
     )
 
 

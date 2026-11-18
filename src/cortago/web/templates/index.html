@@ -32,6 +32,15 @@
         <input type="number" name="max_seconds" value="60" min="10" max="180">
       </label>
     </div>
+    <div class="row">
+      <label class="field"><span>Trecho: começa em <span class="muted">(opcional)</span></span>
+        <input name="range_start" placeholder="1:20:00" inputmode="numeric" pattern="[0-9:hms .,]*">
+      </label>
+      <label class="field"><span>Trecho: termina em <span class="muted">(opcional)</span></span>
+        <input name="range_end" placeholder="2:00:00" inputmode="numeric" pattern="[0-9:hms .,]*">
+      </label>
+    </div>
+    <p class="muted small">Em lives longas, informe o trecho: só ele é baixado e transcrito (bem mais rápido).</p>
     {% set tracks = music_tracks() %}
     <label class="check">
       <input type="checkbox" name="music" value="true" {% if tracks %}checked{% endif %}>
