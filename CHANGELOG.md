@@ -13,11 +13,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 - Editor por corte (`/clips/<id>`): player com aprovar/descartar/baixar/renderizar de novo e abas Texto,
   Corte, Áudio, Efeitos e Postar, cada uma salvando por conta própria. Navegação entre cortes e a aba
   aberta guardada no endereço.
+- **Timeline** no editor de cada corte: régua no tempo do vídeo original, miniaturas, forma de onda,
+  trechos e palavras. Dá para arrastar as bordas dos trechos (com encaixe nas palavras), dividir no cursor,
+  remover partes, corrigir palavras da legenda e ouvir a prévia pulando as partes removidas, sem render.
+  "Restaurar automático" descarta os ajustes. Os ajustes ficam num documento de edição (`Clip.edit`),
+  sem alterar a transcrição nem o corte original.
 - Galeria de cortes na página do vídeo, com miniatura de cada corte (gerada no render, ou na primeira
   visita para cortes antigos).
 
 ### Alterado
 - A página do vídeo deixou de mostrar todos os cortes abertos com edição; a edição foi para o editor de cada corte.
+- A aba "Corte" (início/fim em números) deu lugar à timeline.
 - Tempos dos cortes (no card e na edição) aparecem no relógio do vídeo original, mesmo quando só um trecho foi baixado.
 
 ## [0.4.0] - 2026-11-17

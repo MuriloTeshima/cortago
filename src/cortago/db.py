@@ -82,6 +82,11 @@ class Job(SQLModel, table=True):
         end = None if self.range_end is None else self.range_end - self.source_offset
         return start, end
 
+    def file_end(self) -> float | None:
+        """Até onde vai o material utilizável, em segundos do arquivo (fim do trecho ou do vídeo)."""
+        limit = self.range_end or self.duration
+        return None if limit is None else limit - self.source_offset
+
     @property
     def dir_name(self) -> str:
         return f"{self.id:05d}"
@@ -122,6 +127,11 @@ class Clip(SQLModel, table=True):
     hook_anim: bool = False
     hook_sfx: str = "none"
     progress_bar: bool = False
+
+    # Ajustes manuais da timeline (edição não destrutiva). None = nada ajustado à mão.
+    # {"segments": [[ini, fim], ...]  # trechos que entram, em segundos do arquivo (substitui o corte automático)
+    #  "words": {"12.34": "texto"}}   # correções de legenda, pela posição da palavra (início com 2 casas)
+    edit: dict | None = Field(default=None, sa_column=Column(JSON))
 
     @property
     def duration(self) -> float:

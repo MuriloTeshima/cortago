@@ -20,6 +20,7 @@ from cortago import (
     render,
     subtitles,
     timecode,
+    timeline,
     transcribe,
 )
 from cortago.db import Clip, ClipStatus, Job, JobStatus, RenderStatus
@@ -198,17 +199,13 @@ def render_clip(clip_id: int) -> Clip:
         fx = effects.Effects.from_clip(clip)
         clip = _ensure_music_track(clip, job)
         track = _music_file(clip)
-        loudness = (
-            render.measure_loudness(source, clip.start, clip.duration) if (track or fx.jump_cuts) else None
-        )
-        segments = None
-        if fx.jump_cuts:
-            quiet = render.detect_quiet(
-                source, clip.start, clip.duration, effects.quiet_threshold_db(loudness)
-            )
-            segments = effects.speech_segments(tr.words, clip.start, clip.end, quiet)
+        manual = timeline.manual_segments(clip.edit)
+        needs_loudness = track or (fx.jump_cuts and not manual)
+        loudness = render.measure_loudness(source, clip.start, clip.duration) if needs_loudness else None
+        segments = effective_segments(source, clip, tr.words, loudness)
+        words = timeline.apply_word_fixes(tr.words, timeline.word_fixes(clip.edit))
         subtitles.write_ass(
-            tr.words, clip.start, clip.end, clip.hook, ass, segments=segments, hook_anim=fx.hook_anim
+            words, clip.start, clip.end, clip.hook, ass, segments=segments, hook_anim=fx.hook_anim
         )
         render.render_clip(
             source,
@@ -229,6 +226,19 @@ def render_clip(clip_id: int) -> Clip:
         db.update_clip(clip_id, render_status=RenderStatus.ERROR, render_error=describe_error(exc))
         raise
     return db.update_clip(clip_id, render_status=RenderStatus.DONE, render_version=clip.render_version + 1)
+
+
+def effective_segments(source: Path, clip: Clip, words: list, loudness: float | None):
+    """Trechos que entram no vídeo: os montados à mão na timeline, ou o corte automático de silêncios."""
+    manual = timeline.manual_segments(clip.edit)
+    if manual:
+        return manual
+    if not clip.jump_cuts:
+        return None
+    if loudness is None:
+        loudness = render.measure_loudness(source, clip.start, clip.duration)
+    quiet = render.detect_quiet(source, clip.start, clip.duration, effects.quiet_threshold_db(loudness))
+    return effects.speech_segments(words, clip.start, clip.end, quiet)
 
 
 def _ensure_music_track(clip: Clip, job: Job) -> Clip:

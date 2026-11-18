@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 
 from cortago import pipeline, render
-from cortago.web.common import get_clip
+from cortago.web.common import get_clip, get_job
 
 router = APIRouter()
 
@@ -14,6 +14,16 @@ def _clip_for_job(job_id: int, clip_id: int):
     if clip.job_id != job_id:
         raise HTTPException(404)
     return clip, job
+
+
+@router.get("/media/{job_id}/origem")
+def source_media(job_id: int):
+    """Vídeo de origem do job, para a prévia da timeline (suporta avanço/retrocesso)."""
+    job = get_job(job_id)
+    path = pipeline.job_dir(job) / (job.source_file or "")
+    if not job.source_file or not path.exists():
+        raise HTTPException(404, "Vídeo de origem não encontrado")
+    return FileResponse(path, media_type="video/mp4")
 
 
 @router.get("/media/{job_id}/{clip_id}.mp4")
