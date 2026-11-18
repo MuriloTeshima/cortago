@@ -67,6 +67,7 @@ def fakes(monkeypatch):
     monkeypatch.setattr(pipeline.highlights, "pick_clips", pick_clips)
     monkeypatch.setattr(pipeline.render, "render_clip", render_clip)
     monkeypatch.setattr(pipeline.render, "media_duration", lambda path: 180.0)
+    monkeypatch.setattr(pipeline.render, "thumbnail", lambda video, out: out.write_bytes(b"jpg"))
     monkeypatch.setattr(pipeline.render, "measure_loudness", lambda path, start, duration: calls["loudness"])
     calls["loudness"] = -15.0
     calls["quiet"] = []

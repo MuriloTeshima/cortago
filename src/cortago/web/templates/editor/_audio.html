@@ -1,0 +1,40 @@
+{% set tracks = music_tracks() %}
+<section id="sec-audio" class="tab-panel card" data-panel="audio">
+  <form hx-post="/clips/{{ clip.id }}/audio" hx-target="#sec-audio" hx-swap="outerHTML" class="edit">
+    <label class="field"><span>Música de fundo</span>
+      <select name="music_track" data-music-preview="#preview-{{ clip.id }}">
+        <option value="{{ NO_MUSIC }}" {% if not clip.music_track %}selected{% endif %}>Sem música</option>
+        {% for t in tracks %}
+          <option value="{{ t }}" {% if t == clip.music_track %}selected{% endif %}>{{ music_name(t) }}</option>
+        {% endfor %}
+        {% if clip.music_track and clip.music_track not in tracks %}
+          <option disabled>{{ music_name(clip.music_track) }} (removida da biblioteca)</option>
+        {% endif %}
+      </select>
+      <audio id="preview-{{ clip.id }}" class="music-preview" controls preload="none"
+             {% if clip.music_track and clip.music_track in tracks %}src="/music/{{ clip.music_track | urlencode }}"{% else %}hidden{% endif %}></audio>
+    </label>
+    <label class="field"><span>Volume da música: <output>{{ clip.music_level }}</output>%
+        <span class="muted">(100% = automático, abaixo do áudio do vídeo)</span></span>
+      <input type="range" name="music_level" min="0" max="{{ MAX_MUSIC_LEVEL }}" step="5"
+             value="{{ clip.music_level }}" oninput="this.previousElementSibling.querySelector('output').value = this.value">
+    </label>
+    <div class="actions">
+      <button class="btn primary" type="submit">Salvar e renderizar</button>
+      {% if clip.music_track %}
+        <span class="muted small">Ajuste rápido:</span>
+        <button class="btn icon" type="button" title="Música mais baixa" aria-label="Música mais baixa"
+                {% if clip.music_level <= 0 %}disabled{% endif %}
+                hx-post="/clips/{{ clip.id }}/audio/nivel" hx-vals='{"delta": -{{ MUSIC_LEVEL_STEP }}}'
+                hx-target="#sec-audio" hx-swap="outerHTML">−</button>
+        <button class="btn icon" type="button" title="Música mais alta" aria-label="Música mais alta"
+                {% if clip.music_level >= MAX_MUSIC_LEVEL %}disabled{% endif %}
+                hx-post="/clips/{{ clip.id }}/audio/nivel" hx-vals='{"delta": {{ MUSIC_LEVEL_STEP }}}'
+                hx-target="#sec-audio" hx-swap="outerHTML">+</button>
+      {% endif %}
+      {% include "editor/_saved.html" %}
+    </div>
+  </form>
+  <p class="muted small">Todas as faixas da biblioteca: <a href="/musicas">/musicas</a>.</p>
+</section>
+{% include "editor/_oob.html" %}

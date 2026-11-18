@@ -223,6 +223,7 @@ def render_clip(clip_id: int) -> Clip:
             segments=segments,
             fx=fx,
         )
+        render.thumbnail(clip_path(job, clip), clip_path(job, clip, "jpg"))
         write_clip_text(job, clip)
     except Exception as exc:
         db.update_clip(clip_id, render_status=RenderStatus.ERROR, render_error=describe_error(exc))

@@ -107,11 +107,16 @@ uv run cortago serve        # abre em http://127.0.0.1:8000
 1. Cole o link (ou o caminho de um arquivo), escolha quantos cortes, layout, idioma e duração. Em lives longas,
    informe o **trecho** (ex.: de `1:20:00` a `2:00:00`): só ele é baixado e transcrito.
 2. Acompanhe o processamento: download, transcrição, escolha dos cortes e render.
-3. Revise cada corte: assista, aprove ou descarte e edite título, gancho, descrição, hashtags, início/fim,
-   música e volume. O vídeo é renderizado de novo sozinho quando precisa. "Escolher de novo" pede outra seleção ao Claude.
-4. Para postar, abra **"Postar no YouTube"** no card do corte: passo a passo do YouTube Studio, botão de copiar
-   para cada campo (título, descrição com créditos e hashtags, tags), contadores com os limites do YouTube e
-   as opções que você marca à mão (categoria, idioma, "não é para crianças").
+3. Os cortes aparecem numa **galeria** de miniaturas. "Escolher de novo" pede outra seleção ao Claude.
+4. Clique num corte para abrir o **editor**: player à esquerda (aprovar, descartar, baixar, renderizar de novo)
+   e abas à direita, cada uma salva por conta própria e renderiza de novo só quando precisa:
+   - **Texto:** título, gancho, descrição e hashtags;
+   - **Corte:** início e fim (no tempo do vídeo original) e a transcrição do trecho;
+   - **Áudio:** música (com prévia) e volume;
+   - **Efeitos:** cortes de silêncio, zoom de entrada, gancho animado, som do gancho e barra;
+   - **Postar:** passo a passo do YouTube Studio, com botão de copiar para cada campo e os limites do YouTube.
+
+   Navegue entre os cortes com "Anterior/Próximo". A aba aberta fica no endereço (`/clips/12#audio`).
 
 ### Terminal
 
@@ -214,12 +219,13 @@ commits, changelog) estão em [CLAUDE.md](CLAUDE.md) e o histórico de versões 
 | `subtitles.py` | legendas estilo Shorts (`.ass`) e gancho no topo |
 | `render.py` | layouts 9:16 no FFmpeg e mixagem da música (loudnorm + sidechain ducking) |
 | `timecode.py` | tempos digitados (`1:20:00`, `1h20m`…) e links com o minuto exato |
+| `editing.py` | regras de edição de um corte (validar, salvar, decidir se renderiza de novo), sem HTTP |
 | `effects.py` | efeitos de retenção: cortes de silêncio, zoom, gancho animado, sons, barra |
 | `music.py` | biblioteca de músicas (sorteio, créditos) |
 | `post_info.py` | campos prontos para o YouTube (título, descrição, tags) |
 | `db.py` | modelos `Job` e `Clip` (SQLite via SQLModel) e migração automática |
 | `worker.py` | fila em segundo plano da interface (uma tarefa por vez) |
-| `web/` | FastAPI + templates Jinja/HTMX, sem build de frontend |
+| `web/` | FastAPI + templates Jinja/HTMX, sem build de frontend. Rotas em `web/routes/` (vídeos, cortes, biblioteca, mídia) |
 | `cli.py` | comandos `serve`, `run` e `doctor` |
 
 ## Licença

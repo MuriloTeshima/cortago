@@ -34,6 +34,11 @@ Pipeline que transforma vídeos longos em Shorts 9:16 legendados. Roda localment
 Etapas em `src/cortago/`: `download` → `transcribe` → `highlights` (Claude) → `subtitles` → `render`.
 `pipeline` orquestra e grava o estado em `db` (SQLite, fonte única de verdade). `cli` roda síncrono;
 `web` (FastAPI + Jinja + HTMX, sem build de frontend) enfileira no `worker` (uma tarefa por vez).
+Regras de edição de um corte ficam em `editing.py` (valida, grava e devolve `EditResult(clip, rerender)`), sem HTTP:
+rotas, CLI e futuras telas (timeline) usam o mesmo módulo. `web/app.py` só monta a aplicação; rotas em
+`web/routes/` (`videos`, `clips`, `library`, `media`) e o compartilhado em `web/common.py`.
+Editor: cada aba é um parcial em `templates/editor/`; ao salvar, a resposta traz a aba e, via `hx-swap-oob`,
+o player e o painel de postagem (`editor/_oob.html`).
 Arquivos de cada job em `data/jobs/<id>/` (`source.*`, `transcript.json`, `clips/clip_NN.{mp4,ass,txt}`).
 
 - Testes usam banco em memória e `tmp_path` (fixture em `tests/conftest.py`); na web, `worker` é trocado por fakes.

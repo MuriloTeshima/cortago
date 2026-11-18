@@ -1,0 +1,22 @@
+{# Miniatura do corte na galeria; leva ao editor. Atualiza sozinha enquanto renderiza. #}
+{% set busy = clip.render_status in ("pending", "rendering") and clip.status != "discarded" %}
+<a id="tile-{{ clip.id }}" href="/clips/{{ clip.id }}" class="tile status-{{ clip.status }}"
+  {% if busy and not job.status.running %}hx-get="/clips/{{ clip.id }}/tile" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+  <div class="tile-thumb">
+    {% if clip.render_status == "done" %}
+      <img src="/media/{{ job.id }}/{{ clip.id }}.jpg?v={{ clip.render_version }}" alt="" loading="lazy">
+    {% elif clip.render_status == "error" %}
+      <div class="placeholder error"><p>Falha ao renderizar</p></div>
+    {% elif clip.status == "discarded" %}
+      <div class="placeholder"><p>Descartado</p></div>
+    {% else %}
+      <div class="placeholder"><i class="spinner"></i><p>{{ "Renderizando" if clip.render_status == "rendering" else "Na fila" }}</p></div>
+    {% endif %}
+    <span class="score" title="Potencial segundo o Claude">{{ clip.score }}</span>
+    {% if clip.status == "approved" %}<span class="badge status-done tile-badge">Aprovado</span>{% endif %}
+  </div>
+  <div class="tile-body">
+    <span class="muted small">#{{ clip.position }} · {{ (job.source_offset + clip.start) | time }} · {{ "%.0f" | format(clip.duration) }}s</span>
+    <strong>{{ clip.title }}</strong>
+  </div>
+</a>

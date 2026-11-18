@@ -1,0 +1,48 @@
+{% set info = post_info(clip, job) %}
+<section id="sec-postar" class="tab-panel card" data-panel="postar" {% if oob %}hx-swap-oob="true"{% endif %}>
+  {% if clip.status == "discarded" %}
+    <p class="muted">Corte descartado. Restaure para postar.</p>
+  {% else %}
+  <ol class="post-steps">
+    <li>
+      {% if clip.render_status == "done" %}
+        <a class="btn" href="/media/{{ job.id }}/{{ clip.id }}.mp4?download=true">Baixar o vídeo</a>
+      {% else %}
+        <span class="muted">Baixar o vídeo (aguarde o render terminar)</span>
+      {% endif %}
+    </li>
+    <li>YouTube Studio → <strong>Criar → Enviar vídeos</strong> e escolha o arquivo.</li>
+    <li><div class="copy-field">
+      <div class="copy-head">
+        <span>Título</span>
+        <span class="counter {% if info.title_over %}over{% endif %}">{{ info.title | length }}/{{ TITLE_LIMIT }}</span>
+        <button class="btn small" type="button" data-copy="#yt-title-{{ clip.id }}" data-copy-label="Título copiado">Copiar</button>
+      </div>
+      <input id="yt-title-{{ clip.id }}" readonly value="{{ info.title }}">
+    </div></li>
+    <li><div class="copy-field">
+      <div class="copy-head">
+        <span>Descrição</span>
+        <span class="counter {% if info.description_over %}over{% endif %}">{{ info.description | length }}/{{ DESCRIPTION_LIMIT }}</span>
+        <button class="btn small" type="button" data-copy="#yt-desc-{{ clip.id }}" data-copy-label="Descrição copiada">Copiar</button>
+      </div>
+      <textarea id="yt-desc-{{ clip.id }}" readonly rows="6">{{ info.description }}</textarea>
+      {% if not job.url %}
+        <p class="warn small">Vídeo enviado de um arquivo: troque "{{ job.channel }}" nos créditos pelo criador e link originais antes de publicar.</p>
+      {% endif %}
+    </div></li>
+    <li>Público: <strong>Não, não é conteúdo para crianças</strong>.</li>
+    <li><div class="copy-field">
+      <div class="copy-head">
+        <span>Mostrar mais → Tags</span>
+        <span class="counter">{{ info.tags | length }}/{{ TAGS_LIMIT }}</span>
+        <button class="btn small" type="button" data-copy="#yt-tags-{{ clip.id }}" data-copy-label="Tags copiadas" {% if not info.tags %}disabled{% endif %}>Copiar</button>
+      </div>
+      <input id="yt-tags-{{ clip.id }}" readonly value="{{ info.tags }}" placeholder="sem tags">
+    </div></li>
+    <li>Ainda em Mostrar mais: idioma <strong>{{ info.language }}</strong>, categoria <strong>{{ info.category }}</strong>,
+      conteúdo alterado ou sintético <strong>Não</strong>.</li>
+    <li>Visibilidade: <strong>Público</strong> ou <strong>Programar</strong> para espalhar os posts ao longo do dia.</li>
+  </ol>
+  {% endif %}
+</section>

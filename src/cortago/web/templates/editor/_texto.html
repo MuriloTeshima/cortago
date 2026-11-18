@@ -1,0 +1,11 @@
+<section id="sec-texto" class="tab-panel card" data-panel="texto">
+  <form hx-post="/clips/{{ clip.id }}/texto" hx-target="#sec-texto" hx-swap="outerHTML" class="edit">
+    <label class="field"><span>Título</span><input name="title" value="{{ clip.title }}" maxlength="100" required></label>
+    <label class="field"><span>Gancho na tela <span class="muted">(aparece nos primeiros segundos; mudar renderiza de novo)</span></span>
+      <input name="hook" value="{{ clip.hook }}" maxlength="60"></label>
+    <label class="field"><span>Descrição</span><textarea name="description" rows="3">{{ clip.description }}</textarea></label>
+    <label class="field"><span>Hashtags</span><input name="hashtags" value="{{ clip.hashtags | join(' ') }}"></label>
+    <div class="actions"><button class="btn primary" type="submit">Salvar</button>{% include "editor/_saved.html" %}</div>
+  </form>
+</section>
+{% include "editor/_oob.html" %}
