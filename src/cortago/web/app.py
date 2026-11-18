@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import delete, select
 
-from cortago import config, db, effects, music, pipeline, post_info, render, transcribe, worker
+from cortago import config, db, effects, music, pipeline, post_info, render, timecode, transcribe, worker
 from cortago.db import Clip, ClipStatus, Job, RenderStatus
 
 HERE = Path(__file__).parent
@@ -160,6 +160,8 @@ def create_job(
     min_seconds: Annotated[int, Form(ge=5, le=170)] = 20,
     max_seconds: Annotated[int, Form(ge=10, le=MAX_CLIP_SECONDS)] = 60,
     music_enabled: Annotated[bool, Form(alias="music")] = False,  # checkbox: ausente quando desmarcado
+    range_start: Annotated[str, Form()] = "",
+    range_end: Annotated[str, Form()] = "",
 ):
     if not source.strip():
         raise HTTPException(400, "Informe uma URL ou caminho de arquivo")
@@ -172,6 +174,8 @@ def create_job(
             max_seconds=max_seconds,
             language=language or None,
             music=music_enabled,
+            range_start=timecode.parse(range_start),
+            range_end=timecode.parse(range_end),
         )
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
@@ -254,8 +258,15 @@ def clip_update(
         raise HTTPException(400, "O fim precisa ser depois do início")
     if end - start > MAX_CLIP_SECONDS:
         raise HTTPException(400, f"O corte pode ter no máximo {MAX_CLIP_SECONDS}s")
-    if job.duration and end > job.duration + 0.5:
-        raise HTTPException(400, "O fim passa da duração do vídeo")
+    # Os campos mostram o tempo do vídeo original; o corte é guardado no tempo do arquivo baixado.
+    if start < job.source_offset:
+        raise HTTPException(400, "O início fica antes do trecho baixado")
+    start, end = start - job.source_offset, end - job.source_offset
+    file_end = (
+        (job.range_end or job.duration) - job.source_offset if (job.range_end or job.duration) else None
+    )
+    if file_end and end > file_end + 0.5:
+        raise HTTPException(400, "O fim passa do fim do vídeo (ou do trecho escolhido)")
 
     if music_track is None:
         music_track = clip.music_track

@@ -104,7 +104,8 @@ uv run cortago doctor     # mostra o que foi detectado e o que está faltando
 uv run cortago serve        # abre em http://127.0.0.1:8000
 ```
 
-1. Cole o link (ou o caminho de um arquivo), escolha quantos cortes, layout, idioma e duração.
+1. Cole o link (ou o caminho de um arquivo), escolha quantos cortes, layout, idioma e duração. Em lives longas,
+   informe o **trecho** (ex.: de `1:20:00` a `2:00:00`): só ele é baixado e transcrito.
 2. Acompanhe o processamento: download, transcrição, escolha dos cortes e render.
 3. Revise cada corte: assista, aprove ou descarte e edite título, gancho, descrição, hashtags, início/fim,
    música e volume. O vídeo é renderizado de novo sozinho quando precisa. "Escolher de novo" pede outra seleção ao Claude.
@@ -117,6 +118,7 @@ uv run cortago serve        # abre em http://127.0.0.1:8000
 ```bash
 uv run cortago run "https://www.youtube.com/watch?v=..." -n 5
 uv run cortago run ~/Downloads/live.mp4 --layout crop --lang pt --no-music
+uv run cortago run "https://www.twitch.tv/videos/..." --inicio 1:20:00 --fim 2:00:00
 ```
 
 | Opção | Padrão | Descrição |
@@ -126,6 +128,7 @@ uv run cortago run ~/Downloads/live.mp4 --layout crop --lang pt --no-music
 | `--lang` | auto | idioma do áudio |
 | `--min/--max` | 20/60 | duração dos cortes em segundos |
 | `--music/--no-music` | com música | música de fundo sorteada da biblioteca |
+| `--inicio/--fim` | vídeo inteiro | processa só um trecho (`1:20:00`, `80:00`, `4800` ou `1h20m`) |
 
 Jobs criados pelo terminal também aparecem na interface.
 
@@ -210,6 +213,7 @@ commits, changelog) estão em [CLAUDE.md](CLAUDE.md) e o histórico de versões 
 | `highlights.py` | prompt e structured output do Claude; ajuste dos cortes às bordas das palavras |
 | `subtitles.py` | legendas estilo Shorts (`.ass`) e gancho no topo |
 | `render.py` | layouts 9:16 no FFmpeg e mixagem da música (loudnorm + sidechain ducking) |
+| `timecode.py` | tempos digitados (`1:20:00`, `1h20m`…) e links com o minuto exato |
 | `effects.py` | efeitos de retenção: cortes de silêncio, zoom, gancho animado, sons, barra |
 | `music.py` | biblioteca de músicas (sorteio, créditos) |
 | `post_info.py` | campos prontos para o YouTube (título, descrição, tags) |

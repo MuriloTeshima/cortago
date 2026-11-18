@@ -16,7 +16,8 @@ class FakeUsage:
 def fakes(monkeypatch):
     calls = {"download": 0, "select": 0, "render": [], "music": [], "volume": []}
 
-    def fetch(source, job_dir):
+    def fetch(source, job_dir, section=None):
+        calls.setdefault("section", []).append(section)
         calls["download"] += 1
         job_dir.mkdir(parents=True, exist_ok=True)
         (job_dir / "source.mp4").write_bytes(b"x")
@@ -24,7 +25,8 @@ def fakes(monkeypatch):
             title="Vídeo", channel="Canal", url="https://x", duration=120, path=job_dir / "source.mp4"
         )
 
-    def transcribe(video, cache, language=None):
+    def transcribe(video, cache, language=None, window=None):
+        calls.setdefault("window", []).append(window)
         words = [Word(text=f"p{i}", start=i, end=i + 0.8) for i in range(100)]
         return Transcript(language="pt", segments=[Segment(start=0, end=100, text="", words=words)])
 
@@ -262,3 +264,49 @@ def test_jump_cuts_off_keeps_whole_clip(fakes):
     job = pipeline.create_job("https://youtube.com/watch?v=abc")
     pipeline.run_job(job.id)
     assert fakes["segments"] == [None, None]
+
+
+def test_range_is_passed_to_download_and_transcription(fakes, monkeypatch):
+    def fetch(source, job_dir, section=None):
+        fakes.setdefault("section", []).append(section)
+        job_dir.mkdir(parents=True, exist_ok=True)
+        (job_dir / "source.mp4").write_bytes(b"x")
+        # só o trecho foi baixado: o arquivo começa em 4800 s do original
+        return SourceInfo(
+            title="Live",
+            channel="Canal",
+            url="https://youtu.be/abc",
+            duration=18000,
+            path=job_dir / "source.mp4",
+            offset=4800,
+        )
+
+    monkeypatch.setattr(pipeline.download, "fetch", fetch)
+    job = pipeline.create_job("https://youtu.be/abc", range_start=4800, range_end=7200)
+    job = pipeline.run_job(job.id)
+    assert fakes["section"][-1] == (4800, 7200)
+    assert job.source_offset == 4800
+    assert fakes["window"][-1] == (0.0, 2400)  # no relógio do arquivo baixado
+    text = pipeline.clip_path(job, db.job_clips(job.id)[0], "txt").read_text(encoding="utf-8")
+    assert "https://youtu.be/abc?t=4810s" in text  # corte em 10 s do arquivo = 4810 s da live
+
+
+def test_range_with_full_download(fakes):
+    # o fake baixa o vídeo inteiro (offset 0): o trecho vira janela de transcrição
+    job = pipeline.create_job("https://youtube.com/watch?v=abc", range_start=30, range_end=90)
+    pipeline.run_job(job.id)
+    assert fakes["window"][-1] == (30, 90)
+
+
+def test_range_validation():
+    with pytest.raises(ValueError, match="pelo menos"):
+        pipeline.create_job("x", range_start=100, range_end=110)
+    with pytest.raises(ValueError, match="negativo"):
+        pipeline.create_job("x", range_start=-5)
+
+
+def test_range_start_after_video_end(fakes):
+    job = pipeline.create_job("https://youtube.com/watch?v=abc", range_start=500)  # o vídeo do fake tem 120 s
+    with pytest.raises(ValueError, match="começa em"):
+        pipeline.run_job(job.id)
+    assert db.get_job(job.id).status == JobStatus.ERROR

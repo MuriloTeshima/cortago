@@ -6,6 +6,7 @@
       <p class="muted">
         {% if job.url %}<a href="{{ job.url }}" target="_blank" rel="noopener">{{ job.channel }}</a>{% else %}{{ job.channel or job.source }}{% endif %}
         {% if job.duration %} · {{ job.duration | time }}{% endif %}
+        {% if job.range_start or job.range_end %} · trecho {{ (job.range_start or 0) | time }}–{{ (job.range_end | time) if job.range_end else "fim" }}{% endif %}
         · layout {{ job.layout }} · {{ job.min_seconds }}–{{ job.max_seconds }}s
         · {{ "com" if job.music else "sem" }} música
         {% if job.input_tokens %} · {{ job.input_tokens }} / {{ job.output_tokens }} tokens{% endif %}

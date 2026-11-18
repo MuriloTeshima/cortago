@@ -21,7 +21,7 @@
   <div class="clip-body">
     <div class="clip-meta">
       <span class="score" title="Potencial segundo o Claude">{{ clip.score }}</span>
-      <span class="muted small">#{{ clip.position }} · {{ clip.start | time }}–{{ clip.end | time }} · {{ "%.0f" | format(clip.duration) }}s</span>
+      <span class="muted small">#{{ clip.position }} · {{ (job.source_offset + clip.start) | time }}–{{ (job.source_offset + clip.end) | time }} · {{ "%.0f" | format(clip.duration) }}s</span>
       {% if clip.status == "approved" %}<span class="badge status-done">Aprovado</span>{% endif %}
     </div>
     <h3>{{ clip.title }}</h3>
@@ -117,8 +117,8 @@
         <label class="field"><span>Descrição</span><textarea name="description" rows="2">{{ clip.description }}</textarea></label>
         <label class="field"><span>Hashtags</span><input name="hashtags" value="{{ clip.hashtags | join(' ') }}"></label>
         <div class="row">
-          <label class="field"><span>Início (s)</span><input type="number" step="0.1" min="0" name="start" value="{{ '%.1f' | format(clip.start) }}"></label>
-          <label class="field"><span>Fim (s)</span><input type="number" step="0.1" min="0" name="end" value="{{ '%.1f' | format(clip.end) }}"></label>
+          <label class="field"><span>Início (s no vídeo original)</span><input type="number" step="0.1" min="0" name="start" value="{{ '%.1f' | format(job.source_offset + clip.start) }}"></label>
+          <label class="field"><span>Fim (s no vídeo original)</span><input type="number" step="0.1" min="0" name="end" value="{{ '%.1f' | format(job.source_offset + clip.end) }}"></label>
         </div>
         {% set tracks = music_tracks() %}
         <label class="field"><span>Música de fundo</span>

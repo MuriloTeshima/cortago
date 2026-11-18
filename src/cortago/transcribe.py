@@ -34,24 +34,48 @@ class Transcript(BaseModel):
         return [w for s in self.segments for w in s.words]
 
 
-def transcribe(video: Path, cache: Path, language: str | None = None) -> Transcript:
+def transcribe(
+    video: Path, cache: Path, language: str | None = None, window: tuple[float, float | None] | None = None
+) -> Transcript:
+    """Transcreve o vídeo, ou só `window` (início, fim em segundos do arquivo). Os tempos saem em segundos do arquivo."""
     if cache.exists():
         return Transcript.model_validate_json(cache.read_text(encoding="utf-8"))
 
+    start, end = window or (0.0, None)
+    audio = load_audio(video, start, end)
     setup = hardware.whisper_setup()
     if setup.backend == "mlx":
-        transcript = _transcribe_mlx(video, setup, language)
+        transcript = _transcribe_mlx(audio, setup, language)
     else:
-        transcript = _transcribe_faster_whisper(video, setup, language)
+        transcript = _transcribe_faster_whisper(audio, setup, language)
+    transcript = shift(transcript, start)
     cache.write_text(transcript.model_dump_json(indent=1), encoding="utf-8")
     return transcript
 
 
-def _transcribe_mlx(video: Path, setup: hardware.WhisperSetup, language: str | None) -> Transcript:
+def shift(transcript: Transcript, seconds: float) -> Transcript:
+    """Soma `seconds` a todos os tempos (o áudio do trecho começa em 0, o arquivo não)."""
+    if not seconds:
+        return transcript
+    return Transcript(
+        language=transcript.language,
+        segments=[
+            Segment(
+                start=s.start + seconds,
+                end=s.end + seconds,
+                text=s.text,
+                words=[Word(text=w.text, start=w.start + seconds, end=w.end + seconds) for w in s.words],
+            )
+            for s in transcript.segments
+        ],
+    )
+
+
+def _transcribe_mlx(audio, setup: hardware.WhisperSetup, language: str | None) -> Transcript:
     import mlx_whisper  # import tardio: só existe em Mac com chip Apple
 
     result = mlx_whisper.transcribe(
-        str(video), path_or_hf_repo=setup.model, word_timestamps=True, language=language, verbose=False
+        audio, path_or_hf_repo=setup.model, word_timestamps=True, language=language, verbose=False
     )
     segments = [
         Segment(
@@ -90,8 +114,8 @@ def _load_faster_whisper(setup: hardware.WhisperSetup):
 SAMPLE_RATE = 16000  # o Whisper trabalha com áudio mono a 16 kHz
 
 
-def load_audio(video: Path):
-    """Extrai o áudio com o FFmpeg (o mesmo usado no render), em vez da PyAV do faster-whisper."""
+def load_audio(video: Path, start: float = 0.0, end: float | None = None):
+    """Extrai o áudio (mono, 16 kHz) com o FFmpeg, opcionalmente só de `start` até `end` (segundos do arquivo)."""
     import numpy as np
 
     raw = subprocess.run(
@@ -101,6 +125,8 @@ def load_audio(video: Path):
             "-hide_banner",
             "-loglevel",
             "error",
+            *(["-ss", f"{start:.3f}"] if start else []),
+            *(["-to", f"{end:.3f}"] if end is not None else []),
             "-i",
             str(video),
             "-vn",
@@ -118,11 +144,9 @@ def load_audio(video: Path):
     return np.frombuffer(raw, np.int16).astype(np.float32) / 32768.0
 
 
-def _transcribe_faster_whisper(video: Path, setup: hardware.WhisperSetup, language: str | None) -> Transcript:
+def _transcribe_faster_whisper(audio, setup: hardware.WhisperSetup, language: str | None) -> Transcript:
     model = _load_faster_whisper(setup)
-    segments_iter, info = model.transcribe(
-        load_audio(video), language=language, word_timestamps=True, vad_filter=True
-    )
+    segments_iter, info = model.transcribe(audio, language=language, word_timestamps=True, vad_filter=True)
     return segments_from_faster_whisper(segments_iter, info.language or language or "")
 
 

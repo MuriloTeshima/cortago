@@ -9,7 +9,19 @@ from pathlib import Path
 
 from sqlmodel import delete
 
-from cortago import config, db, download, effects, highlights, music, post_info, render, subtitles, transcribe
+from cortago import (
+    config,
+    db,
+    download,
+    effects,
+    highlights,
+    music,
+    post_info,
+    render,
+    subtitles,
+    timecode,
+    transcribe,
+)
 from cortago.db import Clip, ClipStatus, Job, JobStatus, RenderStatus
 
 Log = Callable[[str], None]
@@ -39,6 +51,9 @@ def write_clip_text(job: Job, clip: Clip) -> None:
     path.write_text(clip_text(clip, job), encoding="utf-8")
 
 
+MIN_RANGE_SECONDS = 30  # trecho menor que isso não rende cortes
+
+
 def create_job(
     source: str,
     *,
@@ -48,11 +63,17 @@ def create_job(
     max_seconds: int = 60,
     language: str | None = None,
     music: bool = True,
+    range_start: float | None = None,
+    range_end: float | None = None,
 ) -> Job:
     if layout not in render.LAYOUTS:
         raise ValueError(f"layout inválido: {layout}")
     if min_seconds >= max_seconds:
         raise ValueError("a duração mínima precisa ser menor que a máxima")
+    if range_start is not None and range_start < 0:
+        raise ValueError("o início do trecho não pode ser negativo")
+    if range_end is not None and range_end - (range_start or 0) < max(min_seconds, MIN_RANGE_SECONDS):
+        raise ValueError(f"o trecho precisa ter pelo menos {max(min_seconds, MIN_RANGE_SECONDS)}s")
     with db.session() as s:
         job = Job(
             source=source.strip(),
@@ -62,6 +83,8 @@ def create_job(
             max_seconds=max_seconds,
             language=language or None,
             music=music,
+            range_start=range_start or None,
+            range_end=range_end,
         )
         s.add(job)
         s.commit()
@@ -95,8 +118,13 @@ def _download(job_id: int, log: Log) -> Job:
     if job.source_file and (job_dir(job) / job.source_file).exists():
         return job
     db.update_job(job_id, status=JobStatus.DOWNLOADING, error=None)
-    log("Baixando vídeo...")
-    info = download.fetch(job.source, job_dir(job))
+    section = (job.range_start or 0.0, job.range_end) if (job.range_start or job.range_end) else None
+    log("Baixando trecho do vídeo..." if section else "Baixando vídeo...")
+    info = download.fetch(job.source, job_dir(job), section)
+    if job.range_start and job.range_start >= info.duration:
+        raise ValueError(
+            f"o trecho começa em {timecode.format(job.range_start)}, mas o vídeo tem só {timecode.format(info.duration)}"
+        )
     return db.update_job(
         job_id,
         title=info.title,
@@ -104,6 +132,7 @@ def _download(job_id: int, log: Log) -> Job:
         url=info.url,
         duration=info.duration,
         source_file=info.path.name,
+        source_offset=info.offset,
     )
 
 
@@ -114,6 +143,7 @@ def _transcribe(job: Job, log: Log) -> transcribe.Transcript:
         job_dir(job) / job.source_file,  # type: ignore[operator]
         job_dir(job) / "transcript.json",
         job.language,
+        window=job.window(),
     )
 
 
@@ -124,7 +154,8 @@ def _select(job: Job, tr: transcribe.Transcript, log: Log) -> None:
         title=job.title or "",
         channel=job.channel or "",
         url=job.url or "",
-        duration=job.duration or 0,
+        # Com trecho, o Claude só vê (e só precisa saber) a duração do trecho.
+        duration=(job.range_end or job.duration or 0) - (job.range_start or 0),
         path=job_dir(job) / (job.source_file or ""),
     )
     suggestions, usage = highlights.pick_clips(info, tr, job.max_clips, job.min_seconds, job.max_seconds)
@@ -155,7 +186,12 @@ def render_clip(clip_id: int) -> Clip:
 
     db.update_clip(clip_id, render_status=RenderStatus.RENDERING, render_error=None)
     try:
-        tr = transcribe.transcribe(job_dir(job) / job.source_file, job_dir(job) / "transcript.json")
+        tr = transcribe.transcribe(
+            job_dir(job) / job.source_file,
+            job_dir(job) / "transcript.json",
+            job.language,
+            window=job.window(),
+        )
         ass = clip_path(job, clip, "ass")
         ass.parent.mkdir(parents=True, exist_ok=True)
         source = job_dir(job) / job.source_file

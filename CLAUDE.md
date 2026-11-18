@@ -49,4 +49,7 @@ Arquivos de cada job em `data/jobs/<id>/` (`source.*`, `transcript.json`, `clips
   efeitos). Cortes de silêncio usam palavras **e** `render.detect_quiet` (silencedetect relativo ao loudness do
   corte): nunca cortar só por falta de palavras, senão some o som do jogo/trailer. Com cortes, os tempos das
   legendas passam por `effects.remap`. No formulário, a seção usa `effects_form` porque checkbox desmarcado não é enviado.
+- Trecho do vídeo: `Job.range_start/range_end` estão no relógio do **vídeo original**; `Job.source_offset` é onde o
+  arquivo baixado começa (> 0 quando só o trecho foi baixado). Transcrição e cortes ficam no relógio do **arquivo**
+  (`Job.window()` converte). A interface mostra e recebe tempos do original (soma/subtrai `source_offset`).
 - IDs usam AUTOINCREMENT: não reaproveitar IDs evita que o navegador mostre vídeo antigo do cache.

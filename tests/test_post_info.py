@@ -25,7 +25,7 @@ def test_description_has_credits_and_hashtags():
     clip, job = make()
     info = post_info.build(clip, job)
     assert info.description == (
-        "Um detalhe que ninguém viu.\n\nCréditos: Canal Original — https://youtu.be/abc\n\n#GTA6 #Rockstar"
+        "Um detalhe que ninguém viu.\n\nCréditos: Canal Original — https://youtu.be/abc?t=0s\n\n#GTA6 #Rockstar"
     )
     assert info.title == "Detalhe escondido no trailer"
 

@@ -415,3 +415,36 @@ def test_sfx_preview(client, monkeypatch):
     assert r.status_code == 200 and r.headers["content-type"] == "audio/wav"
     assert client.get("/sfx/none.wav").status_code == 404
     assert client.get("/sfx/buzina.wav").status_code == 404
+
+
+def test_create_job_with_range(client):
+    r = client.post(
+        "/jobs", data={"source": "x", "range_start": "1:20:00", "range_end": "2h"}, follow_redirects=False
+    )
+    job = db.get_job(int(r.headers["location"].rsplit("/", 1)[1]))
+    assert (job.range_start, job.range_end) == (4800, 7200)
+
+
+def test_create_job_with_invalid_range(client):
+    assert client.post("/jobs", data={"source": "x", "range_start": "abc"}).status_code == 400
+    assert (
+        client.post("/jobs", data={"source": "x", "range_start": "1:00", "range_end": "1:10"}).status_code
+        == 400
+    )
+
+
+def test_clip_times_shown_and_edited_in_original_video_time(client, queued, done_job):
+    job, clip = done_job
+    db.update_job(job.id, source_offset=4800, range_start=4800, range_end=7200)
+    html = client.get(f"/jobs/{job.id}").text
+    assert "trecho 1:20:00–2:00:00" in html
+    assert "#1 · 1:20:10–1:20:40" in html  # corte de 10–40 s do arquivo
+    assert 'name="start" value="4810.0"' in html
+
+    form = {"title": "t", "hook": "olha", "start": "4815", "end": "4840"}
+    client.post(f"/clips/{clip.id}", data=form)
+    with db.session() as s:
+        c = s.get(Clip, clip.id)
+    assert (c.start, c.end) == (15, 40)
+    assert client.post(f"/clips/{clip.id}", data={**form, "start": "100", "end": "120"}).status_code == 400
+    assert client.post(f"/clips/{clip.id}", data={**form, "start": "7190", "end": "7210"}).status_code == 400

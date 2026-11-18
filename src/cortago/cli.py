@@ -6,7 +6,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from cortago import config, db, pipeline
+from cortago import config, db, pipeline, timecode
 from cortago.db import ClipStatus
 
 app = typer.Typer(add_completion=False, help="Gera Shorts automaticamente a partir de vídeos longos.")
@@ -95,6 +95,8 @@ def run(
     min_seconds: int = typer.Option(20, "--min", help="Duração mínima do corte"),
     max_seconds: int = typer.Option(60, "--max", help="Duração máxima do corte"),
     music: bool = typer.Option(True, help="Música de fundo sorteada da biblioteca (CORTAGO_MUSIC_DIR)"),
+    inicio: str = typer.Option(None, "--inicio", help="Processa só a partir deste ponto (ex.: 1:20:00)"),
+    fim: str = typer.Option(None, "--fim", help="Processa só até este ponto (ex.: 2:00:00)"),
 ) -> None:
     """Processa um vídeo direto no terminal. O resultado também aparece na interface web."""
     try:
@@ -106,6 +108,8 @@ def run(
             max_seconds=max_seconds,
             language=language,
             music=music,
+            range_start=timecode.parse(inicio),
+            range_end=timecode.parse(fim),
         )
     except ValueError as exc:
         raise typer.BadParameter(str(exc)) from exc
