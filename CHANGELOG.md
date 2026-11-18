@@ -4,26 +4,27 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-17
+
 ### Adicionado
-- Efeitos de retenção, ligados por corte na edição (seção "Efeitos") e com padrões no `.env`:
+- **Multiplataforma (macOS, Windows, Linux):** a ferramenta detecta o computador e escolhe sozinha a
+  transcrição (MLX no Mac com chip Apple, faster-whisper em GPU NVIDIA ou CPU) e o encoder de vídeo
+  (VideoToolbox, NVENC, Quick Sync, AMF ou libx264). Instruções de instalação para os três sistemas.
+- `cortago doctor`: mostra o hardware detectado e o que está faltando (FFmpeg, libass, chave da API).
+- **Efeitos de retenção**, ligados por corte na edição (seção "Efeitos") e com padrões no `.env`:
   cortes de silêncio (só pausas sem fala **e** sem som; som de jogo e trailer são preservados),
   zoom de entrada, gancho animado, som no gancho (whoosh/pop/impact gerados pela ferramenta, com
   prévia) e barra de progresso. O card mostra um resumo dos efeitos ativos.
-- Limitador no fim da mixagem (teto de -1 dB) para evitar distorção ao somar música e efeitos.
-- Painel "Postar no YouTube" em cada corte: passo a passo do YouTube Studio com botão de copiar por campo
+- **Painel "Postar no YouTube"** em cada corte: passo a passo do YouTube Studio com botão de copiar por campo
   (título, descrição, tags), contadores com os limites do YouTube, as opções a marcar à mão e aviso quando
-  os créditos ainda são de arquivo local.
-- Configuração `CORTAGO_YT_CATEGORY`, `CORTAGO_YT_LANGUAGE` e `CORTAGO_YT_EXTRA_TAGS`.
-- **Multiplataforma (macOS, Windows, Linux):** a ferramenta detecta o computador e escolhe sozinha a
-  transcrição (MLX no Mac com chip Apple, faster-whisper em GPU NVIDIA ou CPU) e o encoder de vídeo
-  (VideoToolbox, NVENC, Quick Sync, AMF ou libx264).
-- `cortago doctor`: mostra o hardware detectado e o que está faltando (FFmpeg, libass, chave da API).
-- Instruções de instalação para Windows e Linux. CI roda nos três sistemas.
+  os créditos ainda são de arquivo local. Configurável com `CORTAGO_YT_CATEGORY`, `CORTAGO_YT_LANGUAGE` e
+  `CORTAGO_YT_EXTRA_TAGS`.
+- **Prévia das músicas:** player na edição do corte que toca a faixa escolhida antes de salvar, e página
+  `/musicas` com todas as faixas da biblioteca (link na página inicial).
+- Limitador no fim da mixagem (teto de -1 dB) para evitar distorção ao somar música e efeitos.
 - Identidade visual: logo no cabeçalho da interface e no README (versões para tema claro e escuro),
   favicon e ícones do app.
-- Licença MIT.
-- Prévia das músicas: player na edição do corte que toca a faixa escolhida antes de salvar, e página
-  `/musicas` com todas as faixas da biblioteca (link na página inicial).
+- Licença MIT. CI rodando em Ubuntu, Windows e macOS.
 
 ### Alterado
 - O yt-dlp passou a ser usado como biblioteca Python (instalado pelo `uv sync`), não como programa externo.
@@ -70,7 +71,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 - Render 9:16 com FFmpeg nos layouts `blur` e `crop`, usando encoder de hardware.
 - Lint (ruff), testes (pytest) e CI no GitHub Actions.
 
-[Unreleased]: https://github.com/MuriloTeshima/cortago/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/MuriloTeshima/cortago/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/MuriloTeshima/cortago/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/MuriloTeshima/cortago/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/MuriloTeshima/cortago/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/MuriloTeshima/cortago/releases/tag/v0.1.0
