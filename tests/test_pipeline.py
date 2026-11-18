@@ -40,8 +40,22 @@ def fakes(monkeypatch):
         ]
         return sugs[:count], FakeUsage()
 
-    def render_clip(source, start, end, ass, out, layout, music=None, music_offset=0.0, music_volume=None):
+    def render_clip(
+        source,
+        start,
+        end,
+        ass,
+        out,
+        layout,
+        music=None,
+        music_offset=0.0,
+        music_volume=None,
+        segments=None,
+        fx=None,
+    ):
         calls["render"].append((start, end))
+        calls.setdefault("segments", []).append(segments)
+        calls.setdefault("fx", []).append(fx)
         calls["music"].append(music.name if music else None)
         calls["volume"].append(music_volume)
         out.write_bytes(b"mp4")
@@ -53,6 +67,10 @@ def fakes(monkeypatch):
     monkeypatch.setattr(pipeline.render, "media_duration", lambda path: 180.0)
     monkeypatch.setattr(pipeline.render, "measure_loudness", lambda path, start, duration: calls["loudness"])
     calls["loudness"] = -15.0
+    calls["quiet"] = []
+    monkeypatch.setattr(
+        pipeline.render, "detect_quiet", lambda path, start, duration, threshold: calls["quiet"]
+    )
     return calls
 
 
@@ -206,3 +224,41 @@ def test_music_volume_follows_video_loudness_and_level(fakes):
     db.update_clip(clip.id, music_level=50)
     pipeline.render_clip(clip.id)
     assert abs(fakes["volume"][-1] - normal / 2) < 1e-9
+
+
+def test_new_clips_get_effect_defaults_from_config(fakes, monkeypatch):
+    monkeypatch.setattr(config, "FX_JUMP_CUTS", True)
+    monkeypatch.setattr(config, "FX_INTRO_ZOOM", "forte")
+    monkeypatch.setattr(config, "FX_HOOK_SFX", "pop")
+    monkeypatch.setattr(config, "FX_PROGRESS_BAR", True)
+    job = pipeline.create_job("https://youtube.com/watch?v=abc")
+    pipeline.run_job(job.id)
+    clip = db.job_clips(job.id)[0]
+    assert (clip.jump_cuts, clip.intro_zoom, clip.hook_sfx, clip.progress_bar, clip.hook_anim) == (
+        True,
+        "forte",
+        "pop",
+        True,
+        False,
+    )
+    fx = fakes["fx"][0]
+    assert (fx.intro_zoom, fx.hook_sfx, fx.progress_bar) == ("forte", "pop", True)
+
+
+def test_jump_cuts_remove_only_quiet_pauses(fakes, monkeypatch):
+    monkeypatch.setattr(config, "FX_JUMP_CUTS", True)
+    # palavras a cada 1 s com 0,2 s de pausa; um silêncio real de 13,0 a 15,0
+    fakes["quiet"] = [(13.0, 15.0)]
+    job = pipeline.create_job("https://youtube.com/watch?v=abc")
+    pipeline.run_job(job.id)
+    segments = fakes["segments"][0]
+    assert segments is not None and len(segments) >= 1
+    # nenhuma pausa sem silêncio foi cortada: os trechos cobrem tudo menos o miolo do silêncio detectado
+    removed = (40 - 10) - sum(b - a for a, b in segments)
+    assert removed < 2.0
+
+
+def test_jump_cuts_off_keeps_whole_clip(fakes):
+    job = pipeline.create_job("https://youtube.com/watch?v=abc")
+    pipeline.run_job(job.id)
+    assert fakes["segments"] == [None, None]

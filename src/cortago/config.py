@@ -44,3 +44,15 @@ YT_CATEGORY = os.getenv("CORTAGO_YT_CATEGORY", "Jogos")
 YT_LANGUAGE = os.getenv("CORTAGO_YT_LANGUAGE", "Português (Brasil)")
 # Tags extras adicionadas a todo corte, separadas por vírgula (ex.: "games,cortes de games").
 YT_EXTRA_TAGS = os.getenv("CORTAGO_YT_EXTRA_TAGS", "")
+
+
+def _flag(name: str, default: bool) -> bool:
+    return os.getenv(name, "1" if default else "0").strip().lower() in ("1", "true", "sim", "yes", "on")
+
+
+# Efeitos de retenção aplicados por padrão nos cortes novos (cada corte pode mudar na edição).
+FX_JUMP_CUTS = _flag("CORTAGO_FX_JUMP_CUTS", True)
+FX_INTRO_ZOOM = os.getenv("CORTAGO_FX_INTRO_ZOOM", "suave")  # none | suave | forte
+FX_HOOK_ANIM = _flag("CORTAGO_FX_HOOK_ANIM", True)
+FX_HOOK_SFX = os.getenv("CORTAGO_FX_HOOK_SFX", "whoosh")  # none | whoosh | pop | impact
+FX_PROGRESS_BAR = _flag("CORTAGO_FX_PROGRESS_BAR", True)

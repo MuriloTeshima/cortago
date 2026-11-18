@@ -104,6 +104,13 @@ class Clip(SQLModel, table=True):
     # Ajuste manual do volume da música em % sobre o nível automático (100 = automático).
     music_level: int = 100
 
+    # Efeitos de retenção (ver effects.py). Cortes novos recebem os padrões do .env; os antigos ficam sem efeitos.
+    jump_cuts: bool = False
+    intro_zoom: str = "none"
+    hook_anim: bool = False
+    hook_sfx: str = "none"
+    progress_bar: bool = False
+
     @property
     def duration(self) -> float:
         return self.end - self.start

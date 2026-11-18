@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -333,3 +335,83 @@ def test_brand_assets_are_served(client):
     assert 'src="/static/brand/logo.png" alt="CortaGo"' in html
     for path in ("favicon.ico", "icon-32.png", "apple-touch-icon.png", "logo.png"):
         assert client.get(f"/static/brand/{path}").status_code == 200
+
+
+EFFECTS_FORM = {
+    "title": "Detalhe",
+    "hook": "olha",
+    "description": "d",
+    "hashtags": "gta6",
+    "start": "10",
+    "end": "40",
+}
+
+
+def test_edit_effects_rerenders_and_saves(client, queued, done_job):
+    _, clip = done_job
+    form = {
+        **EFFECTS_FORM,
+        "effects_form": "true",
+        "jump_cuts": "true",
+        "intro_zoom": "forte",
+        "hook_sfx": "pop",
+    }
+    client.post(f"/clips/{clip.id}", data=form)
+    assert queued["renders"] == [clip.id]
+    with db.session() as s:
+        c = s.get(Clip, clip.id)
+    assert (c.jump_cuts, c.intro_zoom, c.hook_sfx, c.hook_anim, c.progress_bar) == (
+        True,
+        "forte",
+        "pop",
+        False,
+        False,
+    )
+
+
+def test_form_without_effects_section_keeps_effects(client, queued, done_job):
+    _, clip = done_job
+    db.update_clip(clip.id, jump_cuts=True, hook_sfx="whoosh")
+    client.post(f"/clips/{clip.id}", data=EFFECTS_FORM)  # sem effects_form: não mexe
+    assert queued["renders"] == []
+    with db.session() as s:
+        c = s.get(Clip, clip.id)
+    assert (c.jump_cuts, c.hook_sfx) == (True, "whoosh")
+
+
+def test_unchecking_all_effects(client, queued, done_job):
+    _, clip = done_job
+    db.update_clip(clip.id, jump_cuts=True, hook_anim=True, progress_bar=True)
+    client.post(f"/clips/{clip.id}", data={**EFFECTS_FORM, "effects_form": "true"})
+    with db.session() as s:
+        c = s.get(Clip, clip.id)
+    assert (c.jump_cuts, c.hook_anim, c.progress_bar) == (False, False, False)
+    assert queued["renders"] == [clip.id]
+
+
+def test_invalid_effect_is_rejected(client, done_job):
+    _, clip = done_job
+    form = {**EFFECTS_FORM, "effects_form": "true", "hook_sfx": "buzina"}
+    assert client.post(f"/clips/{clip.id}", data=form).status_code == 400
+
+
+def test_card_shows_effects_summary_and_controls(client, done_job):
+    _, clip = done_job
+    db.update_clip(clip.id, jump_cuts=True, intro_zoom="suave", hook_sfx="whoosh")
+    html = client.get(f"/clips/{clip.id}").text
+    assert "✦ sem silêncios · zoom suave · som whoosh" in html
+    assert 'name="effects_form"' in html
+    assert '<option value="whoosh" selected>Whoosh</option>' in html
+
+
+def test_sfx_preview(client, monkeypatch):
+    from cortago.web import app as web
+
+    def fake_run(cmd, **kwargs):
+        Path(cmd[-1]).write_bytes(b"RIFFfake")
+
+    monkeypatch.setattr(web.subprocess, "run", fake_run)
+    r = client.get("/sfx/pop.wav")
+    assert r.status_code == 200 and r.headers["content-type"] == "audio/wav"
+    assert client.get("/sfx/none.wav").status_code == 404
+    assert client.get("/sfx/buzina.wav").status_code == 404

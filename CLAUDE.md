@@ -45,4 +45,8 @@ Arquivos de cada job em `data/jobs/<id>/` (`source.*`, `transcript.json`, `clips
   YouTube" e pelo `.txt` de cada corte. Limites do YouTube em `post_info.TITLE_LIMIT` etc.
 - Volume da música: `render.auto_music_volume()` usa o loudness medido do trecho (`measure_loudness`, ebur128)
   menos `MUSIC_GAP_DB`, limitado a -40…-20 LUFS, vezes `Clip.music_level` (% manual, 100 = automático).
+- Efeitos (`effects.py`): campos por corte em `Clip` (padrão do `.env` só em cortes novos; antigos ficam sem
+  efeitos). Cortes de silêncio usam palavras **e** `render.detect_quiet` (silencedetect relativo ao loudness do
+  corte): nunca cortar só por falta de palavras, senão some o som do jogo/trailer. Com cortes, os tempos das
+  legendas passam por `effects.remap`. No formulário, a seção usa `effects_form` porque checkbox desmarcado não é enviado.
 - IDs usam AUTOINCREMENT: não reaproveitar IDs evita que o navegador mostre vídeo antigo do cache.
