@@ -1,0 +1,3 @@
+{% if saved %}
+  <p class="saved small">✓ Salvo{% if clip.render_status in ("pending", "rendering") %} — renderizando o vídeo de novo{% endif %}</p>
+{% endif %}

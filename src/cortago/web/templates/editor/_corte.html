@@ -1,0 +1,16 @@
+<section id="sec-corte" class="tab-panel card" data-panel="corte">
+  <form hx-post="/clips/{{ clip.id }}/corte" hx-target="#sec-corte" hx-swap="outerHTML" class="edit">
+    <div class="row">
+      <label class="field"><span>Início <span class="muted">(s no vídeo original)</span></span>
+        <input type="number" step="0.1" min="0" name="start" value="{{ '%.1f' | format(job.source_offset + clip.start) }}"></label>
+      <label class="field"><span>Fim <span class="muted">(s no vídeo original)</span></span>
+        <input type="number" step="0.1" min="0" name="end" value="{{ '%.1f' | format(job.source_offset + clip.end) }}"></label>
+    </div>
+    <div class="actions"><button class="btn primary" type="submit">Salvar e renderizar</button>{% include "editor/_saved.html" %}</div>
+  </form>
+  {% if transcript %}
+    <h3 class="section-title">Transcrição do trecho</h3>
+    <p class="transcript">{{ transcript }}</p>
+  {% endif %}
+</section>
+{% include "editor/_oob.html" %}

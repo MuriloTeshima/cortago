@@ -1,0 +1,5 @@
+{# Depois de salvar uma seção, atualiza também o player e o painel de postagem (fora da área alvo). #}
+{% if oob %}
+  {% include "editor/_player.html" %}
+  {% include "editor/_postar.html" %}
+{% endif %}

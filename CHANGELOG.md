@@ -10,7 +10,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
   senão, baixa inteiro e transcreve só o trecho.
 - Créditos com o link no instante do corte no vídeo original (YouTube e Twitch).
 
+- Editor por corte (`/clips/<id>`): player com aprovar/descartar/baixar/renderizar de novo e abas Texto,
+  Corte, Áudio, Efeitos e Postar, cada uma salvando por conta própria. Navegação entre cortes e a aba
+  aberta guardada no endereço.
+- Galeria de cortes na página do vídeo, com miniatura de cada corte (gerada no render, ou na primeira
+  visita para cortes antigos).
+
 ### Alterado
+- A página do vídeo deixou de mostrar todos os cortes abertos com edição; a edição foi para o editor de cada corte.
 - Tempos dos cortes (no card e na edição) aparecem no relógio do vídeo original, mesmo quando só um trecho foi baixado.
 
 ## [0.4.0] - 2026-11-17

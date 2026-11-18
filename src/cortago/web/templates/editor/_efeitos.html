@@ -1,0 +1,24 @@
+<section id="sec-efeitos" class="tab-panel card" data-panel="efeitos">
+  <form hx-post="/clips/{{ clip.id }}/efeitos" hx-target="#sec-efeitos" hx-swap="outerHTML" class="edit">
+    <label class="check"><input type="checkbox" name="jump_cuts" value="true" {% if clip.jump_cuts %}checked{% endif %}>
+      <span>Cortar silêncios <span class="muted small">(pausas sem fala e sem som)</span></span></label>
+    <label class="check"><input type="checkbox" name="hook_anim" value="true" {% if clip.hook_anim %}checked{% endif %}>
+      <span>Gancho animado</span></label>
+    <label class="check"><input type="checkbox" name="progress_bar" value="true" {% if clip.progress_bar %}checked{% endif %}>
+      <span>Barra de progresso</span></label>
+    <div class="row">
+      <label class="field"><span>Zoom de entrada</span>
+        <select name="intro_zoom">
+          {% for z in INTRO_ZOOMS %}<option value="{{ z }}" {% if z == clip.intro_zoom %}selected{% endif %}>{{ ZOOM_LABELS[z] }}</option>{% endfor %}
+        </select>
+      </label>
+      <label class="field"><span>Som do gancho</span>
+        <select name="hook_sfx" data-sfx-preview>
+          {% for x in HOOK_SFX %}<option value="{{ x }}" {% if x == clip.hook_sfx %}selected{% endif %}>{{ SFX_LABELS[x] }}</option>{% endfor %}
+        </select>
+      </label>
+    </div>
+    <div class="actions"><button class="btn primary" type="submit">Salvar e renderizar</button>{% include "editor/_saved.html" %}</div>
+  </form>
+</section>
+{% include "editor/_oob.html" %}

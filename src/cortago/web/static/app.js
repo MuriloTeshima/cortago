@@ -59,3 +59,26 @@ document.addEventListener("change", (event) => {
   if (!select || select.value === "none") return;
   new Audio("/sfx/" + select.value + ".wav").play().catch(() => {});
 });
+
+// Abas do editor de corte. A aba ativa fica no endereço (#audio), então recarregar ou voltar mantém o lugar.
+function applyTab() {
+  const tabs = [...document.querySelectorAll("[data-tab]")];
+  if (!tabs.length) return;
+  const names = tabs.map((t) => t.dataset.tab);
+  const wanted = location.hash.slice(1);
+  const active = names.includes(wanted) ? wanted : names[0];
+  tabs.forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === active)));
+  document.querySelectorAll("[data-panel]").forEach((p) => (p.hidden = p.dataset.panel !== active));
+}
+
+document.addEventListener("click", (event) => {
+  const tab = event.target.closest("[data-tab]");
+  if (!tab) return;
+  history.replaceState(null, "", "#" + tab.dataset.tab);
+  applyTab();
+});
+
+window.addEventListener("hashchange", applyTab);
+document.addEventListener("DOMContentLoaded", applyTab);
+// Seções trocadas pelo HTMX (inclusive fora da área alvo) voltam visíveis; reaplica a aba ativa.
+document.addEventListener("htmx:afterSettle", applyTab);

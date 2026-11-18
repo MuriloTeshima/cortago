@@ -197,6 +197,33 @@ def render_clip(
     )
 
 
+def thumbnail(video: Path, out: Path, width: int = 360) -> None:
+    """Miniatura do corte (um quadro perto do começo, já com legenda e gancho) para a galeria."""
+    at = min(1.5, max(media_duration(video) / 3, 0))
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-ss",
+            f"{at:.2f}",
+            "-i",
+            str(video),
+            "-frames:v",
+            "1",
+            "-vf",
+            f"scale={width}:-2",
+            "-q:v",
+            "4",
+            str(out),
+        ],
+        check=True,
+        capture_output=True,
+    )
+
+
 def has_audio(path: Path) -> bool:
     out = subprocess.run(
         [

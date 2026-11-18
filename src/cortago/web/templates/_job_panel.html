@@ -33,10 +33,9 @@
   {% endif %}
 
   {% if clips %}
-    <div class="clips">
+    <div class="gallery">
       {% for clip in clips %}
-        {% set transcript = transcripts.get(clip.id, "") %}
-        {% include "_clip_card.html" %}
+        {% include "_clip_tile.html" %}
       {% endfor %}
     </div>
   {% elif job.status.running %}

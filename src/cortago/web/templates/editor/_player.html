@@ -1,0 +1,53 @@
+{% set busy = clip.render_status in ("pending", "rendering") and clip.status != "discarded" %}
+<div id="player" class="editor-player status-{{ clip.status }}" {% if oob %}hx-swap-oob="true"{% endif %}
+  {% if busy %}hx-get="/clips/{{ clip.id }}/player" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+  <div class="player">
+    {% if clip.render_status == "done" %}
+      <video controls preload="metadata" poster="/media/{{ job.id }}/{{ clip.id }}.jpg?v={{ clip.render_version }}"
+             src="/media/{{ job.id }}/{{ clip.id }}.mp4?v={{ clip.render_version }}"></video>
+    {% elif clip.render_status == "error" %}
+      <div class="placeholder error">
+        <p>Falha ao renderizar</p>
+        <code>{{ clip.render_error }}</code>
+      </div>
+    {% elif clip.status == "discarded" %}
+      <div class="placeholder"><p>Descartado</p></div>
+    {% else %}
+      <div class="placeholder"><i class="spinner"></i><p>{{ "Renderizando" if clip.render_status == "rendering" else "Na fila" }}</p></div>
+    {% endif %}
+  </div>
+
+  <div class="player-info">
+    <div class="clip-meta">
+      <span class="score" title="Potencial segundo o Claude">{{ clip.score }}</span>
+      <span class="muted small">{{ (job.source_offset + clip.start) | time }}–{{ (job.source_offset + clip.end) | time }} · {{ "%.0f" | format(clip.duration) }}s</span>
+      {% if clip.status == "approved" %}<span class="badge status-done">Aprovado</span>{% endif %}
+    </div>
+    <h2>{{ clip.title }}</h2>
+    <p class="muted small">{{ clip.reason }}</p>
+    {% set fx = effects_summary(clip) %}
+    {% if fx %}<p class="small fx-summary">✦ {{ fx | join(" · ") }}</p>{% endif %}
+    {% if clip.music_track %}<p class="small music">♪ {{ music_name(clip.music_track) }} · {{ clip.music_level }}%</p>{% endif %}
+
+    <div class="actions">
+      {% if clip.status != "approved" %}
+        <button class="btn primary" hx-post="/clips/{{ clip.id }}/status" hx-vals='{"status": "approved"}'
+                hx-target="#player" hx-swap="outerHTML">Aprovar</button>
+      {% endif %}
+      {% if clip.status != "discarded" %}
+        <button class="btn" hx-post="/clips/{{ clip.id }}/status" hx-vals='{"status": "discarded"}'
+                hx-target="#player" hx-swap="outerHTML">Descartar</button>
+      {% else %}
+        <button class="btn" hx-post="/clips/{{ clip.id }}/status" hx-vals='{"status": "suggested"}'
+                hx-target="#player" hx-swap="outerHTML">Restaurar</button>
+      {% endif %}
+      {% if clip.render_status == "done" %}
+        <a class="btn" href="/media/{{ job.id }}/{{ clip.id }}.mp4?download=true">Baixar</a>
+      {% endif %}
+      {% if not busy and clip.status != "discarded" %}
+        <button class="btn" hx-post="/clips/{{ clip.id }}/render" hx-target="#player" hx-swap="outerHTML"
+                title="Gera o vídeo de novo com as configurações atuais">Renderizar de novo</button>
+      {% endif %}
+    </div>
+  </div>
+</div>
