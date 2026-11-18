@@ -19,5 +19,10 @@ def isolated(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "YT_CATEGORY", "Jogos")
     monkeypatch.setattr(config, "YT_LANGUAGE", "Português (Brasil)")
     monkeypatch.setattr(config, "YT_EXTRA_TAGS", "")
+    monkeypatch.setattr(config, "FX_JUMP_CUTS", False)
+    monkeypatch.setattr(config, "FX_INTRO_ZOOM", "none")
+    monkeypatch.setattr(config, "FX_HOOK_ANIM", False)
+    monkeypatch.setattr(config, "FX_HOOK_SFX", "none")
+    monkeypatch.setattr(config, "FX_PROGRESS_BAR", False)
     db.use_engine(create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool))
     yield

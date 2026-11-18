@@ -52,3 +52,10 @@ document.addEventListener("play", (event) => {
   if (event.target.tagName !== "AUDIO") return;
   document.querySelectorAll("audio").forEach((a) => a !== event.target && a.pause());
 }, true);
+
+// Prévia do som do gancho ao escolher no seletor.
+document.addEventListener("change", (event) => {
+  const select = event.target.closest("[data-sfx-preview]");
+  if (!select || select.value === "none") return;
+  new Audio("/sfx/" + select.value + ".wav").play().catch(() => {});
+});

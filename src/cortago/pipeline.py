@@ -9,7 +9,7 @@ from pathlib import Path
 
 from sqlmodel import delete
 
-from cortago import config, db, download, highlights, music, post_info, render, subtitles, transcribe
+from cortago import config, db, download, effects, highlights, music, post_info, render, subtitles, transcribe
 from cortago.db import Clip, ClipStatus, Job, JobStatus, RenderStatus
 
 Log = Callable[[str], None]
@@ -136,7 +136,7 @@ def _select(job: Job, tr: transcribe.Transcript, log: Log) -> None:
     with db.session() as s:
         s.exec(delete(Clip).where(Clip.job_id == job.id))  # type: ignore[arg-type]
         for i, sug in enumerate(suggestions, 1):
-            s.add(Clip(job_id=job.id, position=i, **sug.model_dump()))  # type: ignore[arg-type]
+            s.add(Clip(job_id=job.id, position=i, **sug.model_dump(), **effects.defaults()))  # type: ignore[arg-type]
         s.commit()
     db.update_job(
         job.id,  # type: ignore[arg-type]
@@ -158,11 +158,24 @@ def render_clip(clip_id: int) -> Clip:
         tr = transcribe.transcribe(job_dir(job) / job.source_file, job_dir(job) / "transcript.json")
         ass = clip_path(job, clip, "ass")
         ass.parent.mkdir(parents=True, exist_ok=True)
-        subtitles.write_ass(tr.words, clip.start, clip.end, clip.hook, ass)
+        source = job_dir(job) / job.source_file
+        fx = effects.Effects.from_clip(clip)
         clip = _ensure_music_track(clip, job)
         track = _music_file(clip)
+        loudness = (
+            render.measure_loudness(source, clip.start, clip.duration) if (track or fx.jump_cuts) else None
+        )
+        segments = None
+        if fx.jump_cuts:
+            quiet = render.detect_quiet(
+                source, clip.start, clip.duration, effects.quiet_threshold_db(loudness)
+            )
+            segments = effects.speech_segments(tr.words, clip.start, clip.end, quiet)
+        subtitles.write_ass(
+            tr.words, clip.start, clip.end, clip.hook, ass, segments=segments, hook_anim=fx.hook_anim
+        )
         render.render_clip(
-            job_dir(job) / job.source_file,
+            source,
             clip.start,
             clip.end,
             ass,
@@ -170,7 +183,9 @@ def render_clip(clip_id: int) -> Clip:
             job.layout,
             music=track,
             music_offset=music.offset(render.media_duration(track), clip.duration, clip.id) if track else 0.0,  # type: ignore[arg-type]
-            music_volume=_music_volume(job, clip) if track else None,
+            music_volume=render.auto_music_volume(loudness, level=clip.music_level) if track else None,
+            segments=segments,
+            fx=fx,
         )
         write_clip_text(job, clip)
     except Exception as exc:
@@ -187,12 +202,6 @@ def _ensure_music_track(clip: Clip, job: Job) -> Clip:
     if track is None:  # biblioteca vazia: tenta de novo quando houver músicas
         return clip
     return db.update_clip(clip.id, music_track=track)  # type: ignore[arg-type]
-
-
-def _music_volume(job: Job, clip: Clip) -> float:
-    """Música relativa ao áudio do próprio trecho: vídeo baixo ganha música baixa."""
-    loudness = render.measure_loudness(job_dir(job) / job.source_file, clip.start, clip.duration)  # type: ignore[operator]
-    return render.auto_music_volume(loudness, level=clip.music_level)
 
 
 def _music_file(clip: Clip):

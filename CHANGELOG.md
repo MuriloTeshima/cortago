@@ -5,6 +5,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 ## [Unreleased]
 
 ### Adicionado
+- Efeitos de retenção, ligados por corte na edição (seção "Efeitos") e com padrões no `.env`:
+  cortes de silêncio (só pausas sem fala **e** sem som; som de jogo e trailer são preservados),
+  zoom de entrada, gancho animado, som no gancho (whoosh/pop/impact gerados pela ferramenta, com
+  prévia) e barra de progresso. O card mostra um resumo dos efeitos ativos.
+- Limitador no fim da mixagem (teto de -1 dB) para evitar distorção ao somar música e efeitos.
 - Painel "Postar no YouTube" em cada corte: passo a passo do YouTube Studio com botão de copiar por campo
   (título, descrição, tags), contadores com os limites do YouTube, as opções a marcar à mão e aviso quando
   os créditos ainda são de arquivo local.

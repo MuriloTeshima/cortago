@@ -2,6 +2,7 @@
 
 import mimetypes
 import shutil
+import subprocess
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
@@ -13,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import delete, select
 
-from cortago import config, db, music, pipeline, post_info, render, transcribe, worker
+from cortago import config, db, effects, music, pipeline, post_info, render, transcribe, worker
 from cortago.db import Clip, ClipStatus, Job, RenderStatus
 
 HERE = Path(__file__).parent
@@ -58,6 +59,8 @@ templates.env.globals.update(
     music_name=music.display_name,
     MUSIC_DIR=config.MUSIC_DIR,
     NO_MUSIC=NO_MUSIC,
+    INTRO_ZOOMS=list(effects.INTRO_ZOOMS),
+    HOOK_SFX=list(effects.HOOK_SFX),
     MAX_MUSIC_LEVEL=MAX_MUSIC_LEVEL,
     MUSIC_LEVEL_STEP=MUSIC_LEVEL_STEP,
 )
@@ -238,6 +241,13 @@ def clip_update(
     end: Annotated[float, Form(gt=0)] = 0,
     music_track: Annotated[str | None, Form()] = None,  # NO_MUSIC = sem música; ausente = não mexe
     music_level: Annotated[int | None, Form(ge=0, le=MAX_MUSIC_LEVEL)] = None,  # ausente = não mexe
+    # Efeitos: só são lidos quando o formulário traz a seção (checkbox desmarcado = campo ausente).
+    effects_form: Annotated[bool, Form()] = False,
+    jump_cuts: Annotated[bool, Form()] = False,
+    intro_zoom: Annotated[str, Form()] = "none",
+    hook_anim: Annotated[bool, Form()] = False,
+    hook_sfx: Annotated[str, Form()] = "none",
+    progress_bar: Annotated[bool, Form()] = False,
 ):
     clip, job = _get_clip(clip_id)
     if end <= start:
@@ -257,12 +267,22 @@ def clip_update(
     if music_level is None:
         music_level = clip.music_level
 
-    needs_render = (start, end, hook.strip(), music_track or "", music_level) != (
+    current_fx = effects.Effects.from_clip(clip)
+    if effects_form:
+        try:
+            new_fx = effects.Effects(jump_cuts, intro_zoom, hook_anim, hook_sfx, progress_bar)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+    else:
+        new_fx = current_fx
+
+    needs_render = (start, end, hook.strip(), music_track or "", music_level, new_fx) != (
         clip.start,
         clip.end,
         clip.hook,
         clip.music_track or "",
         clip.music_level,
+        current_fx,
     )
     clip = db.update_clip(
         clip_id,
@@ -274,6 +294,11 @@ def clip_update(
         end=end,
         music_track=music_track,
         music_level=music_level,
+        jump_cuts=new_fx.jump_cuts,
+        intro_zoom=new_fx.intro_zoom,
+        hook_anim=new_fx.hook_anim,
+        hook_sfx=new_fx.hook_sfx,
+        progress_bar=new_fx.progress_bar,
     )
     if needs_render:
         worker.submit_render(clip_id)
@@ -320,6 +345,23 @@ def music_library(request: Request):
     return templates.TemplateResponse(
         request, "musicas.html", {"tracks": tracks, "music_dir": config.MUSIC_DIR}
     )
+
+
+@app.get("/sfx/{name}.wav")
+def sfx_preview(name: str):
+    """Prévia do som do gancho (gerado pelo FFmpeg e guardado em cache)."""
+    spec = effects.HOOK_SFX.get(name)
+    if not spec:
+        raise HTTPException(404, "Som não encontrado")
+    cache = config.DATA_DIR / "cache" / f"sfx_{name}.wav"
+    if not cache.exists():
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(
+            ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", spec, str(cache)],
+            check=True,
+            capture_output=True,
+        )
+    return FileResponse(cache, media_type="audio/wav")
 
 
 @app.get("/music/{track}")

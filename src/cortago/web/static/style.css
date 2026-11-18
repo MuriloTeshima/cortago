@@ -209,6 +209,9 @@ summary { cursor: pointer; color: var(--muted); font-size: 0.9rem; }
 .track-info { display: flex; flex-direction: column; min-width: 0; }
 .track audio { width: 100%; height: 36px; }
 @media (max-width: 640px) { .track { grid-template-columns: 1fr; } }
+.effects { border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.75rem 0.75rem; display: flex; flex-direction: column; gap: 0.45rem; margin: 0; }
+.effects legend { color: var(--muted); font-size: 0.85rem; padding: 0 0.3rem; }
+.fx-summary { color: var(--accent); opacity: 0.8; }
 .transcript { font-size: 0.88rem; color: var(--muted); margin-top: 0.5rem !important; }
 
 #toast {

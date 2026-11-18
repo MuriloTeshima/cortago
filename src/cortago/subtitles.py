@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from cortago import config
+from cortago import config, effects
 from cortago.transcribe import Word
 
 HEADER = """[Script Info]
@@ -70,7 +70,10 @@ def write_ass(
     hook: str,
     out: Path,
     hook_seconds: float = 3.0,
+    segments: list[effects.Segment] | None = None,
+    hook_anim: bool = False,
 ) -> None:
+    """Legendas do corte. Com `segments` (cortes de silêncio), os tempos seguem o vídeo já sem as pausas."""
     w, h = config.OUT_W, config.OUT_H
     lines = [
         HEADER.format(
@@ -84,13 +87,21 @@ def write_ass(
     highlight = _highlight()
 
     if hook:
-        lines.append(f"Dialogue: 1,{_ts(0)},{_ts(hook_seconds)},Hook,,0,0,0,,{_clean(hook)}")
+        anim = effects.hook_override(hook_anim)
+        lines.append(f"Dialogue: 1,{_ts(0)},{_ts(hook_seconds)},Hook,,0,0,0,,{anim}{_clean(hook)}")
 
-    clip_words = [
-        x.model_copy(update={"start": x.start - clip_start, "end": x.end - clip_start})
-        for x in words
-        if x.end > clip_start and x.start < clip_end
-    ]
+    inside = [x for x in words if x.end > clip_start and x.start < clip_end]
+    if segments:
+        clip_words = [
+            x.model_copy(
+                update={"start": effects.remap(x.start, segments), "end": effects.remap(x.end, segments)}
+            )
+            for x in inside
+        ]
+    else:
+        clip_words = [
+            x.model_copy(update={"start": x.start - clip_start, "end": x.end - clip_start}) for x in inside
+        ]
 
     for chunk in _chunks(clip_words):
         chunk_end = chunk[-1].end

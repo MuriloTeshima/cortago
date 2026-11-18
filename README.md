@@ -153,6 +153,19 @@ Coloque faixas livres de direitos em `data/music/` (mp3, m4a, wav, ogg, flac) ou
 
 > Não use música comercial: gera claim no Content ID e pode desmonetizar ou derrubar o vídeo.
 
+### Efeitos de retenção
+
+Pensados para os primeiros segundos e o ritmo do Short. Cada corte liga ou desliga na edição
+(seção "Efeitos"); os padrões para cortes novos vêm do `.env`.
+
+| Efeito | O que faz | Variável (padrão) |
+| --- | --- | --- |
+| Cortar silêncios | remove pausas longas **sem fala e sem som** (som de jogo e trailer nunca são cortados) e começa já na primeira palavra | `CORTAGO_FX_JUMP_CUTS` (`1`) |
+| Zoom de entrada | o vídeo começa ampliado e volta ao normal em 0,6 s | `CORTAGO_FX_INTRO_ZOOM` (`suave`; ou `none`, `forte`) |
+| Gancho animado | o texto do topo entra "saltando" | `CORTAGO_FX_HOOK_ANIM` (`1`) |
+| Som do gancho | *whoosh*, *pop* ou *impact* gerados pela própria ferramenta, com prévia na edição | `CORTAGO_FX_HOOK_SFX` (`whoosh`) |
+| Barra de progresso | linha fina no topo, na cor de destaque | `CORTAGO_FX_PROGRESS_BAR` (`1`) |
+
 ### Personalizar para o seu canal
 
 A ferramenta é genérica. Tudo que é do canal fica no `.env`:
@@ -197,6 +210,7 @@ commits, changelog) estão em [CLAUDE.md](CLAUDE.md) e o histórico de versões 
 | `highlights.py` | prompt e structured output do Claude; ajuste dos cortes às bordas das palavras |
 | `subtitles.py` | legendas estilo Shorts (`.ass`) e gancho no topo |
 | `render.py` | layouts 9:16 no FFmpeg e mixagem da música (loudnorm + sidechain ducking) |
+| `effects.py` | efeitos de retenção: cortes de silêncio, zoom, gancho animado, sons, barra |
 | `music.py` | biblioteca de músicas (sorteio, créditos) |
 | `post_info.py` | campos prontos para o YouTube (título, descrição, tags) |
 | `db.py` | modelos `Job` e `Clip` (SQLite via SQLModel) e migração automática |

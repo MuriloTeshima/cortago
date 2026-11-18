@@ -26,6 +26,13 @@
     </div>
     <h3>{{ clip.title }}</h3>
     <p class="muted small">{{ clip.reason }}</p>
+    {% set fx_on = [] %}
+    {% if clip.jump_cuts %}{% set _ = fx_on.append("sem silêncios") %}{% endif %}
+    {% if clip.intro_zoom != "none" %}{% set _ = fx_on.append("zoom " ~ clip.intro_zoom) %}{% endif %}
+    {% if clip.hook_anim %}{% set _ = fx_on.append("gancho animado") %}{% endif %}
+    {% if clip.hook_sfx != "none" %}{% set _ = fx_on.append("som " ~ clip.hook_sfx) %}{% endif %}
+    {% if clip.progress_bar %}{% set _ = fx_on.append("barra") %}{% endif %}
+    {% if fx_on %}<p class="muted small fx-summary">✦ {{ fx_on | join(" · ") }}</p>{% endif %}
     {% if clip.music_track %}
       <div class="music-row">
         <span class="small music">♪ {{ music_name(clip.music_track) }}</span>
@@ -132,7 +139,31 @@
           <input type="range" name="music_level" min="0" max="{{ MAX_MUSIC_LEVEL }}" step="5"
                  value="{{ clip.music_level }}" oninput="this.previousElementSibling.querySelector('output').value = this.value">
         </label>
-        <p class="muted small">Mudar início, fim, gancho, música ou volume renderiza o vídeo de novo.</p>
+        {% set zoom_labels = {"none": "Sem zoom", "suave": "Suave", "forte": "Forte"} %}
+        {% set sfx_labels = {"none": "Sem som", "whoosh": "Whoosh", "pop": "Pop", "impact": "Impact"} %}
+        <fieldset class="effects">
+          <legend>Efeitos</legend>
+          <input type="hidden" name="effects_form" value="true">
+          <label class="check small"><input type="checkbox" name="jump_cuts" value="true" {% if clip.jump_cuts %}checked{% endif %}>
+            <span>Cortar silêncios <span class="muted">(pausas sem fala e sem som)</span></span></label>
+          <label class="check small"><input type="checkbox" name="hook_anim" value="true" {% if clip.hook_anim %}checked{% endif %}>
+            <span>Gancho animado</span></label>
+          <label class="check small"><input type="checkbox" name="progress_bar" value="true" {% if clip.progress_bar %}checked{% endif %}>
+            <span>Barra de progresso</span></label>
+          <div class="row">
+            <label class="field"><span>Zoom de entrada</span>
+              <select name="intro_zoom">
+                {% for z in INTRO_ZOOMS %}<option value="{{ z }}" {% if z == clip.intro_zoom %}selected{% endif %}>{{ zoom_labels[z] }}</option>{% endfor %}
+              </select>
+            </label>
+            <label class="field"><span>Som do gancho</span>
+              <select name="hook_sfx" data-sfx-preview>
+                {% for x in HOOK_SFX %}<option value="{{ x }}" {% if x == clip.hook_sfx %}selected{% endif %}>{{ sfx_labels[x] }}</option>{% endfor %}
+              </select>
+            </label>
+          </div>
+        </fieldset>
+        <p class="muted small">Mudar início, fim, gancho, música, volume ou efeitos renderiza o vídeo de novo.</p>
         <button class="btn primary" type="submit">Salvar</button>
       </form>
     </details>
