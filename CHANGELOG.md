@@ -18,6 +18,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
   remover partes, corrigir palavras da legenda e ouvir a prévia pulando as partes removidas, sem render.
   "Restaurar automático" descarta os ajustes. Os ajustes ficam num documento de edição (`Clip.edit`),
   sem alterar a transcrição nem o corte original.
+  A agulha pode ser arrastada (ou arraste na régua, miniaturas, onda ou trechos), com rolagem automática nas
+  bordas; ← → movem 1s (Shift: 0,1s).
+- Arquivos de `/static` com versão no endereço: o navegador não usa mais JS/CSS antigo depois de atualizar.
 - Galeria de cortes na página do vídeo, com miniatura de cada corte (gerada no render, ou na primeira
   visita para cortes antigos).
 

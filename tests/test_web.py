@@ -480,3 +480,12 @@ def test_timeline_save_rejects_invalid(client, timeline_job):
 def test_source_media(client, timeline_job):
     job, _ = timeline_job
     assert client.get(f"/media/{job.id}/origem").content == b"video"
+
+
+def test_static_url_has_version_to_bust_cache():
+    from cortago.web.common import static_url
+
+    url = static_url("timeline.js")
+    assert url.startswith("/static/timeline.js?v=")
+    assert url.split("=")[1] != "0"
+    assert static_url("nao-existe.js") == "/static/nao-existe.js?v=0"

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}#{{ clip.position }} {{ clip.title }} · CortaGo{% endblock %}
-{% block head %}<script src="/static/timeline.js" defer></script>{% endblock %}
+{% block head %}<script src="{{ static('timeline.js') }}" defer></script>{% endblock %}
 {% block content %}
 <nav class="editor-nav">
   <a href="/jobs/{{ job.id }}" class="muted">← {{ job.display_title }}</a>

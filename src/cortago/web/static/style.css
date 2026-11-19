@@ -304,6 +304,13 @@ summary { cursor: pointer; color: var(--muted); font-size: 0.9rem; }
 .tl-word.fixed { border-color: var(--ok); color: var(--ok); }
 .tl-word-input { position: absolute; top: 3px; height: 28px; width: 160px; z-index: 5; font-size: 0.8rem; padding: 0 0.4rem; }
 .tl-playhead { position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: var(--danger); pointer-events: none; z-index: 4; }
+.tl-knob {
+  position: absolute; top: 0; left: -7px; width: 16px; height: 22px; pointer-events: auto; cursor: grab; touch-action: none;
+  background: var(--danger); clip-path: polygon(0 0, 100% 0, 100% 60%, 50% 100%, 0 60%); border-radius: 3px 3px 0 0;
+}
+.tl-knob:hover { filter: brightness(1.15); }
+.scrubbing, .scrubbing * { cursor: grabbing !important; user-select: none; }
+.tl-ruler, .tl-strip, .tl-wave { touch-action: none; }
 .tl-help { margin: 0.6rem 0 0; }
 .tl-transcript { margin-top: 0.75rem; }
 @media (max-width: 800px) { .tl-body { grid-template-columns: 1fr; } }

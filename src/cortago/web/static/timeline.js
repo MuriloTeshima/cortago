@@ -112,6 +112,7 @@ class Timeline {
     this.video.addEventListener("loadedmetadata", () => this.seek(this.segments[0][0]));
     this.video.addEventListener("play", () => (this.playBtn.textContent = "❚❚ Pausar"));
     this.video.addEventListener("pause", () => (this.playBtn.textContent = "▶ Prévia"));
+    this.video.addEventListener("seeked", () => this.flushSeek());
 
     this.inner = el("div", { class: "tl-inner" });
     this.scroller = el("div", { class: "tl-scroller", tabindex: "0" }, this.inner);
@@ -124,7 +125,8 @@ class Timeline {
         "p",
         { class: "muted small tl-help" },
         "Arraste as bordas dos trechos para ajustar (elas encaixam no começo/fim das palavras), × remove um trecho, ",
-        "clique numa palavra para corrigir a legenda e na régua para posicionar o cursor. Espaço toca/pausa.",
+        "clique numa palavra para corrigir a legenda. Arraste a agulha (ou na régua, miniaturas e onda) para navegar; ",
+        "← → movem 1s (Shift: 0,1s), Espaço toca/pausa, S divide.",
       ),
     );
     this.drawTracks();
@@ -151,15 +153,18 @@ class Timeline {
         el("span", { class: `tl-tick${major ? " major" : ""}`, style: { left: `${this.x(t)}px` } }, major ? fmt(t + d.offset) : ""),
       );
     }
-    ruler.addEventListener("pointerdown", (e) => this.seek(this.t(e.clientX)));
+    ruler.addEventListener("pointerdown", (e) => this.scrub(e));
 
     const strip = el("div", { class: "tl-row tl-strip", style: { backgroundImage: `url("${d.filmstrip}")` } });
     const wave = el("div", { class: "tl-row tl-wave", style: { backgroundImage: `url("${d.waveform}")` } });
-    for (const row of [strip, wave]) row.addEventListener("pointerdown", (e) => this.seek(this.t(e.clientX)));
+    for (const row of [strip, wave]) row.addEventListener("pointerdown", (e) => this.scrub(e));
 
     this.segRow = el("div", { class: "tl-row tl-segs" });
     this.wordRow = el("div", { class: "tl-row tl-words" });
-    this.playhead = el("div", { class: "tl-playhead" });
+    // Agulha: a linha não captura cliques (deixa as bordas dos trechos clicáveis), só a cabeça.
+    const knob = el("span", { class: "tl-knob", title: "Arraste para navegar (← → movem 1s; Shift: 0,1s)" });
+    knob.addEventListener("pointerdown", (e) => this.scrub(e));
+    this.playhead = el("div", { class: "tl-playhead" }, knob);
     this.inner.append(ruler, strip, wave, this.segRow, this.wordRow, this.playhead);
     this.drawSegments();
     this.drawWords();
@@ -188,7 +193,7 @@ class Timeline {
       block.querySelector(".left").addEventListener("pointerdown", (e) => this.drag(e, i, 0));
       block.querySelector(".right").addEventListener("pointerdown", (e) => this.drag(e, i, 1));
       block.addEventListener("pointerdown", (e) => {
-        if (!e.target.classList.contains("tl-handle") && !e.target.classList.contains("tl-del")) this.seek(this.t(e.clientX));
+        if (!e.target.classList.contains("tl-handle") && !e.target.classList.contains("tl-del")) this.scrub(e);
       });
       this.segRow.append(block);
     });
@@ -243,6 +248,83 @@ class Timeline {
     };
     handle.addEventListener("pointermove", move);
     handle.addEventListener("pointerup", up);
+  }
+
+  // Arrastar a agulha (ou clicar e arrastar na régua, miniaturas, onda ou trechos).
+  // A agulha segue o ponteiro na hora; o vídeo busca o quadro sem enfileirar buscas.
+  scrub(event) {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    const target = event.currentTarget;
+    target.setPointerCapture(event.pointerId);
+    this.scroller.focus({ preventScroll: true });
+    const resume = !this.video.paused;
+    if (resume) this.video.pause();
+    this.root.classList.add("scrubbing");
+    let lastX = event.clientX;
+    let edgeTimer = null;
+    const go = (clientX) => {
+      this.scrubTime = this.t(clientX);
+      this.render(this.scrubTime);
+      this.requestSeek(this.scrubTime, true);
+    };
+    // Perto das bordas da área visível, rola a timeline para continuar arrastando.
+    const edgeScroll = () => {
+      const r = this.scroller.getBoundingClientRect();
+      const margin = 40;
+      const dx = lastX < r.left + margin ? lastX - (r.left + margin) : lastX > r.right - margin ? lastX - (r.right - margin) : 0;
+      if (dx) {
+        this.scroller.scrollLeft += Math.max(-30, Math.min(30, dx / 2));
+        go(lastX);
+      }
+      edgeTimer = requestAnimationFrame(edgeScroll);
+    };
+    const move = (e) => {
+      lastX = e.clientX;
+      go(e.clientX);
+      if (edgeTimer === null) edgeTimer = requestAnimationFrame(edgeScroll); // só depois de mexer
+    };
+    const up = () => {
+      target.removeEventListener("pointermove", move);
+      target.removeEventListener("pointerup", up);
+      target.removeEventListener("pointercancel", up);
+      cancelAnimationFrame(edgeTimer);
+      this.root.classList.remove("scrubbing");
+      const t = this.scrubTime;
+      this.scrubTime = null;
+      this.requestSeek(t, false); // busca exata no fim do arraste
+      if (resume) this.video.play();
+    };
+    target.addEventListener("pointermove", move);
+    target.addEventListener("pointerup", up);
+    target.addEventListener("pointercancel", up);
+    go(event.clientX);
+  }
+
+  // Uma busca por vez: enquanto o vídeo ainda busca, guarda só o último tempo pedido.
+  requestSeek(t, fast) {
+    this.pendingSeek = { t, fast };
+    if (this.video.seeking) return;
+    this.flushSeek();
+  }
+  flushSeek() {
+    const p = this.pendingSeek;
+    if (!p) return;
+    this.pendingSeek = null;
+    if (p.fast && this.video.fastSeek) this.video.fastSeek(p.t);
+    else this.video.currentTime = p.t;
+  }
+
+  nudge(seconds) {
+    const [lo, hi] = this.data.window;
+    const now = this.pendingSeek ? this.pendingSeek.t : this.video.currentTime; // busca ainda em curso
+    const t = Math.min(Math.max(now + seconds, lo), hi);
+    this.seek(t);
+    this.render(t);
+    const x = this.x(t);
+    if (x < this.scroller.scrollLeft || x > this.scroller.scrollLeft + this.scroller.clientWidth) {
+      this.scroller.scrollLeft = x - this.scroller.clientWidth / 2;
+    }
   }
 
   split() {
@@ -302,6 +384,9 @@ class Timeline {
       this.togglePlay();
     } else if (e.key.toLowerCase() === "s") {
       this.split();
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      e.preventDefault();
+      this.nudge((e.key === "ArrowLeft" ? -1 : 1) * (e.shiftKey ? 0.1 : 1));
     }
   }
 
@@ -331,7 +416,13 @@ class Timeline {
   // ---------- prévia ----------
 
   seek(t) {
-    this.video.currentTime = t;
+    this.requestSeek(t, false);
+  }
+
+  // Posiciona a agulha e o relógio (durante o arraste, no tempo do ponteiro, não do vídeo).
+  render(t) {
+    if (this.playhead) this.playhead.style.transform = `translateX(${this.x(t)}px)`;
+    this.clock.textContent = fmt(t + this.data.offset);
   }
 
   togglePlay() {
@@ -342,7 +433,11 @@ class Timeline {
 
   tick() {
     if (!this.root.isConnected) return; // saiu da página
-    const t = this.video.currentTime;
+    if (this.scrubTime != null) {
+      requestAnimationFrame(() => this.tick());
+      return; // durante o arraste quem posiciona a agulha é o ponteiro
+    }
+    const t = this.pendingSeek ? this.pendingSeek.t : this.video.currentTime;
     if (!this.video.paused && this.segmentAt(t) < 0) {
       // Pula as partes removidas, como no vídeo final.
       const next = this.segments.find(([a]) => a > t);
@@ -352,14 +447,13 @@ class Timeline {
         this.seek(this.segments[0][0]);
       }
     }
+    this.render(t);
     if (this.playhead) {
       const x = this.x(t);
-      this.playhead.style.transform = `translateX(${x}px)`;
       if (!this.video.paused && (x < this.scroller.scrollLeft || x > this.scroller.scrollLeft + this.scroller.clientWidth - 40)) {
         this.scroller.scrollLeft = x - 40;
       }
     }
-    this.clock.textContent = fmt(t + this.data.offset);
     requestAnimationFrame(() => this.tick());
   }
 
