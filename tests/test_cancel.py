@@ -1,4 +1,5 @@
 import math
+import os
 import sys
 import threading
 import time
@@ -52,7 +53,9 @@ def test_check_inside_scope():
 
 
 def test_run_returns_output_and_raises_on_error():
-    r = cancel.run([sys.executable, "-c", "print('olá')"], text=True, check=True)
+    # PYTHONUTF8: no Windows o Python filho escreveria em cp1252 (o FFmpeg não tem esse problema).
+    env = {**os.environ, "PYTHONUTF8": "1"}
+    r = cancel.run([sys.executable, "-c", "print('olá')"], text=True, check=True, env=env)
     assert r.stdout.strip() == "olá" and r.returncode == 0
     with pytest.raises(Exception) as info:
         cancel.run([sys.executable, "-c", "import sys; sys.exit(3)"], check=True)
