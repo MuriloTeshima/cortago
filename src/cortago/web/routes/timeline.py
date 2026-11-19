@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import FileResponse
 
-from cortago import editing, pipeline, render, timeline, transcribe
+from cortago import editing, gameplay, pipeline, render, timeline, transcribe
 from cortago.db import Clip, Job
 from cortago.web.common import apply, edit_or_400, get_clip
 
@@ -51,6 +51,15 @@ def timeline_data(clip_id: int):
     automatic = pipeline.effective_segments(source, clip.model_copy(update={"edit": None}), tr.words, None)
     automatic = automatic or [(clip.start, clip.end)]
 
+    # Blocos de frase do corte e quais mostram a gameplay (clicáveis na linha "Gameplay").
+    blocks = []
+    if clip.gameplay_mode == "alternar":
+        on = gameplay.effective_spans(clip, tr.words)
+        blocks = [
+            {"start": a, "end": b, "on": gameplay.covered((a, b), on) >= (b - a) / 2}
+            for a, b in gameplay.blocks(tr.words, clip.start, clip.end)
+        ]
+
     return {
         "clip_id": clip.id,
         "offset": job.source_offset,  # soma para mostrar no tempo do vídeo original
@@ -70,6 +79,11 @@ def timeline_data(clip_id: int):
             if w.end > lo and w.start < hi
         ],
         "max_seconds": editing.MAX_CLIP_SECONDS,
+        "gameplay": {
+            "mode": clip.gameplay_mode,
+            "manual": gameplay.manual_spans(clip.edit) is not None,
+            "blocks": blocks,
+        },
         "source": f"/media/{job.id}/origem",
         "waveform": f"/clips/{clip.id}/timeline/onda.png?janela={lo:.1f}-{hi:.1f}",
         "filmstrip": f"/clips/{clip.id}/timeline/miniaturas.jpg?janela={lo:.1f}-{hi:.1f}",
@@ -98,8 +112,17 @@ def timeline_save(clip_id: int, payload: dict = Body(...)):  # noqa: B008
     words = payload.get("words") or {}
     if not isinstance(words, dict):
         raise HTTPException(400, "Correções de legenda inválidas")
+    spans = payload.get("gameplay")  # ausente = mantém
+    if spans is not None and not (
+        isinstance(spans, list) and all(isinstance(s, list | tuple) and len(s) == 2 for s in spans)
+    ):
+        raise HTTPException(400, "Blocos de gameplay inválidos")
     result = edit_or_400(
-        editing.update_timeline, clip_id, segments=[tuple(s) for s in segments], word_fixes=words
+        editing.update_timeline,
+        clip_id,
+        segments=[tuple(s) for s in segments],
+        word_fixes=words,
+        gameplay_spans=[tuple(s) for s in spans] if spans is not None else None,
     )
     clip, _ = apply(result)
     return {"saved": True, "rerender": result.rerender, "render_status": clip.render_status}

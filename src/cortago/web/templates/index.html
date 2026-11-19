@@ -41,6 +41,10 @@
       </label>
     </div>
     <p class="muted small">Em lives longas, informe o trecho: só ele é baixado e transcrito (bem mais rápido).</p>
+    <label class="field"><span>Gameplay de fundo <span class="muted small">(opcional)</span></span>
+      <input name="gameplay_source" placeholder="Link ou arquivo de um vídeo de gameplay">
+    </label>
+    <p class="muted small">A imagem alterna entre quem fala e a gameplay (sem som) para o corte não ficar monótono. O Claude escolhe as frases; você ajusta na timeline.</p>
     {% set tracks = music_tracks() %}
     <label class="check">
       <input type="checkbox" name="music" value="true" {% if tracks %}checked{% endif %}>

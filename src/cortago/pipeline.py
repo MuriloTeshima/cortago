@@ -14,6 +14,7 @@ from cortago import (
     db,
     download,
     effects,
+    gameplay,
     highlights,
     music,
     post_info,
@@ -66,6 +67,7 @@ def create_job(
     music: bool = True,
     range_start: float | None = None,
     range_end: float | None = None,
+    gameplay_source: str | None = None,
 ) -> Job:
     if layout not in render.LAYOUTS:
         raise ValueError(f"layout inválido: {layout}")
@@ -86,6 +88,7 @@ def create_job(
             music=music,
             range_start=range_start or None,
             range_end=range_end,
+            gameplay_source=(gameplay_source or "").strip() or None,
         )
         s.add(job)
         s.commit()
@@ -117,7 +120,7 @@ def _download(job_id: int, log: Log) -> Job:
         job = s.get(Job, job_id)
     assert job is not None
     if job.source_file and (job_dir(job) / job.source_file).exists():
-        return job
+        return _ensure_gameplay(job, log)
     db.update_job(job_id, status=JobStatus.DOWNLOADING, error=None)
     section = (job.range_start or 0.0, job.range_end) if (job.range_start or job.range_end) else None
     log("Baixando trecho do vídeo..." if section else "Baixando vídeo...")
@@ -126,7 +129,7 @@ def _download(job_id: int, log: Log) -> Job:
         raise ValueError(
             f"o trecho começa em {timecode.format(job.range_start)}, mas o vídeo tem só {timecode.format(info.duration)}"
         )
-    return db.update_job(
+    job = db.update_job(
         job_id,
         title=info.title,
         channel=info.channel,
@@ -135,6 +138,50 @@ def _download(job_id: int, log: Log) -> Job:
         source_file=info.path.name,
         source_offset=info.offset,
     )
+    return _ensure_gameplay(job, log)
+
+
+def _ensure_gameplay(job: Job, log: Log) -> Job:
+    """Baixa a gameplay de fundo (uma vez; o mesmo link é reaproveitado entre vídeos)."""
+    if not job.gameplay_source or (job.gameplay_file and Path(job.gameplay_file).exists()):
+        return job
+    db.update_job(job.id, status=JobStatus.DOWNLOADING, error=None)  # type: ignore[arg-type]
+    log("Baixando gameplay de fundo...")
+    path = download.fetch_gameplay(job.gameplay_source, config.gameplay_dir())
+    return db.update_job(job.id, gameplay_file=str(path))  # type: ignore[arg-type]
+
+
+def default_gameplay_mode(job: Job) -> str:
+    if not job.gameplay_source:
+        return "none"
+    mode = config.GAMEPLAY_MODE
+    return mode if mode in gameplay.MODES and mode != "none" else "alternar"
+
+
+def set_gameplay(job_id: int, source: str | None) -> Job:
+    """Coloca, troca ou tira (`source` vazio) a gameplay de um vídeo já processado.
+
+    Os cortes que estavam sem gameplay passam ao modo padrão e voltam para a fila de render; o download
+    acontece no próximo `run_job`.
+    """
+    source = (source or "").strip() or None
+    if source and not download.is_local(source) and not source.startswith(("http://", "https://")):
+        raise ValueError("Informe um link (http/https) ou o caminho de um arquivo de vídeo")
+    job = db.update_job(job_id, gameplay_source=source, gameplay_file=None)
+    mode = default_gameplay_mode(job)
+    for clip in db.job_clips(job_id):
+        fields: dict = {}
+        if source is None and clip.gameplay_mode != "none":
+            fields["gameplay_mode"] = "none"
+        elif source is not None and clip.gameplay_mode == "none":
+            fields["gameplay_mode"] = mode
+        if source is not None or fields:
+            fields["render_status"] = (
+                RenderStatus.PENDING if clip.status != ClipStatus.DISCARDED else clip.render_status
+            )
+        if fields:
+            db.update_clip(clip.id, **fields)  # type: ignore[arg-type]
+    return job
 
 
 def _transcribe(job: Job, log: Log) -> transcribe.Transcript:
@@ -159,7 +206,10 @@ def _select(job: Job, tr: transcribe.Transcript, log: Log) -> None:
         duration=(job.range_end or job.duration or 0) - (job.range_start or 0),
         path=job_dir(job) / (job.source_file or ""),
     )
-    suggestions, usage = highlights.pick_clips(info, tr, job.max_clips, job.min_seconds, job.max_seconds)
+    suggestions, usage = highlights.pick_clips(
+        info, tr, job.max_clips, job.min_seconds, job.max_seconds, gameplay=bool(job.gameplay_source)
+    )
+    mode = default_gameplay_mode(job)
 
     clips_dir = job_dir(job) / "clips"
     if clips_dir.exists():
@@ -168,7 +218,18 @@ def _select(job: Job, tr: transcribe.Transcript, log: Log) -> None:
     with db.session() as s:
         s.exec(delete(Clip).where(Clip.job_id == job.id))  # type: ignore[arg-type]
         for i, sug in enumerate(suggestions, 1):
-            s.add(Clip(job_id=job.id, position=i, **sug.model_dump(), **effects.defaults()))  # type: ignore[arg-type]
+            fields = sug.model_dump(exclude={"gameplay"})
+            hints = [list(x) for x in sug.gameplay] if sug.gameplay is not None else None
+            s.add(
+                Clip(
+                    job_id=job.id,  # type: ignore[arg-type]
+                    position=i,
+                    **fields,
+                    **effects.defaults(),
+                    gameplay_mode=mode,
+                    gameplay_hints=hints,
+                )
+            )
         s.commit()
     db.update_job(
         job.id,  # type: ignore[arg-type]
@@ -204,8 +265,16 @@ def render_clip(clip_id: int) -> Clip:
         loudness = render.measure_loudness(source, clip.start, clip.duration) if needs_loudness else None
         segments = effective_segments(source, clip, tr.words, loudness)
         words = timeline.apply_word_fixes(tr.words, timeline.word_fixes(clip.edit))
+        background = _gameplay_for(job, clip, tr.words, segments)
         subtitles.write_ass(
-            words, clip.start, clip.end, clip.hook, ass, segments=segments, hook_anim=fx.hook_anim
+            words,
+            clip.start,
+            clip.end,
+            clip.hook,
+            ass,
+            segments=segments,
+            hook_anim=fx.hook_anim,
+            split=background is not None and background.mode == "dividida",
         )
         render.render_clip(
             source,
@@ -219,6 +288,7 @@ def render_clip(clip_id: int) -> Clip:
             music_volume=render.auto_music_volume(loudness, level=clip.music_level) if track else None,
             segments=segments,
             fx=fx,
+            gameplay=background,
         )
         render.thumbnail(clip_path(job, clip), clip_path(job, clip, "jpg"))
         write_clip_text(job, clip)
@@ -226,6 +296,23 @@ def render_clip(clip_id: int) -> Clip:
         db.update_clip(clip_id, render_status=RenderStatus.ERROR, render_error=describe_error(exc))
         raise
     return db.update_clip(clip_id, render_status=RenderStatus.DONE, render_version=clip.render_version + 1)
+
+
+def _gameplay_for(job: Job, clip: Clip, words: list, segments) -> "render.Gameplay | None":
+    """Gameplay de fundo deste corte (arquivo, ponto de início e quando aparece), ou None."""
+    if clip.gameplay_mode == "none" or not job.gameplay_source:
+        return None
+    if not job.gameplay_file or not Path(job.gameplay_file).exists():
+        raise FileNotFoundError('A gameplay de fundo ainda não foi baixada. Use "Tentar de novo" no vídeo.')
+    path = Path(job.gameplay_file)
+    duration = effects.total_duration(segments) if segments else clip.duration
+    spans = gameplay.to_output(gameplay.effective_spans(clip, words), clip.start, segments)
+    return render.Gameplay(
+        path=path,
+        offset=music.offset(render.media_duration(path), duration, f"gameplay-{clip.id}"),
+        mode=clip.gameplay_mode,
+        spans=spans,
+    )
 
 
 def effective_segments(source: Path, clip: Clip, words: list, loudness: float | None):

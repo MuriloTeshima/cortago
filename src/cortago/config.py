@@ -46,6 +46,15 @@ YT_LANGUAGE = os.getenv("CORTAGO_YT_LANGUAGE", "Português (Brasil)")
 YT_EXTRA_TAGS = os.getenv("CORTAGO_YT_EXTRA_TAGS", "")
 
 
+# Gameplay de fundo: como os cortes de um vídeo com gameplay começam (none | alternar | dividida).
+GAMEPLAY_MODE = os.getenv("CORTAGO_GAMEPLAY_MODE", "alternar")
+
+
+def gameplay_dir() -> Path:
+    """Gameplays baixadas, compartilhadas entre os vídeos (o mesmo link é baixado uma vez só)."""
+    return DATA_DIR / "gameplay"
+
+
 def _flag(name: str, default: bool) -> bool:
     return os.getenv(name, "1" if default else "0").strip().lower() in ("1", "true", "sim", "yes", "on")
 

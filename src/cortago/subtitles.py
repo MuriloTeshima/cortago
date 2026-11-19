@@ -72,14 +72,18 @@ def write_ass(
     hook_seconds: float = 3.0,
     segments: list[effects.Segment] | None = None,
     hook_anim: bool = False,
+    split: bool = False,
 ) -> None:
-    """Legendas do corte. Com `segments` (cortes de silêncio), os tempos seguem o vídeo já sem as pausas."""
+    """Legendas do corte. Com `segments` (cortes de silêncio), os tempos seguem o vídeo já sem as pausas.
+
+    `split` (tela dividida): a legenda fica logo acima da emenda entre quem fala e a gameplay.
+    """
     w, h = config.OUT_W, config.OUT_H
     lines = [
         HEADER.format(
             w=w,
             h=h,
-            caption_margin=int(h * 0.28),
+            caption_margin=int(h * (0.47 if split else 0.28)),
             hook_margin=int(h * 0.12),
             hook_box=ass_color(config.HOOK_BOX_COLOR),
         )

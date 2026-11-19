@@ -7,7 +7,7 @@ pronta para o usuário.
 
 from dataclasses import dataclass
 
-from cortago import db, effects, music, pipeline, timeline
+from cortago import db, effects, gameplay, music, pipeline, timeline
 from cortago.db import Clip, ClipStatus, Job, RenderStatus
 
 MAX_CLIP_SECONDS = 180
@@ -116,10 +116,25 @@ def update_effects(clip_id: int, fx: effects.Effects) -> EditResult:
     return EditResult(clip, rerender)
 
 
+def update_gameplay_mode(clip_id: int, mode: str) -> EditResult:
+    """Sem gameplay, alternando com quem fala ou em tela dividida (só em vídeos com gameplay de fundo)."""
+    clip, job = _load(clip_id)
+    if mode not in gameplay.MODES:
+        raise EditError("Modo de gameplay inválido")
+    if mode != "none" and not job.gameplay_source:
+        raise EditError("Este vídeo não tem gameplay de fundo")
+    return EditResult(db.update_clip(clip_id, gameplay_mode=mode), mode != clip.gameplay_mode)
+
+
 def update_timeline(
-    clip_id: int, *, segments: list[tuple[float, float]], word_fixes: dict[str, str] | None = None
+    clip_id: int,
+    *,
+    segments: list[tuple[float, float]],
+    word_fixes: dict[str, str] | None = None,
+    gameplay_spans: list[tuple[float, float]] | None = None,
 ) -> EditResult:
-    """Salva os trechos montados na timeline (em segundos do arquivo) e as correções de legenda.
+    """Salva os trechos montados na timeline (em segundos do arquivo), as correções de legenda e os blocos de
+    gameplay (`None` mantém os que já estavam).
 
     Os trechos passam a definir o corte: início e fim viram as bordas do primeiro e do último.
     """
@@ -127,12 +142,19 @@ def update_timeline(
     try:
         ordered = timeline.validate_segments(segments, job.file_end())
         fixes = timeline.validate_word_fixes(word_fixes or {})
+        spans = (
+            gameplay.validate_spans(gameplay_spans, ordered[0][0], ordered[-1][1])
+            if gameplay_spans is not None
+            else gameplay.manual_spans(clip.edit)
+        )
     except ValueError as exc:
         raise EditError(str(exc)) from exc
     total = sum(b - a for a, b in ordered)
     if total > MAX_CLIP_SECONDS:
         raise EditError(f"O corte pode ter no máximo {MAX_CLIP_SECONDS}s")
-    edit = {"segments": [list(s) for s in ordered], "words": fixes}
+    edit: dict = {"segments": [list(s) for s in ordered], "words": fixes}
+    if spans is not None:
+        edit["gameplay"] = [list(s) for s in spans]
     rerender = edit != (clip.edit or {}) or (ordered[0][0], ordered[-1][1]) != (clip.start, clip.end)
     clip = db.update_clip(clip_id, edit=edit, start=ordered[0][0], end=ordered[-1][1])
     return EditResult(clip, rerender)

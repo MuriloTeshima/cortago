@@ -97,6 +97,9 @@ def run(
     music: bool = typer.Option(True, help="Música de fundo sorteada da biblioteca (CORTAGO_MUSIC_DIR)"),
     inicio: str = typer.Option(None, "--inicio", help="Processa só a partir deste ponto (ex.: 1:20:00)"),
     fim: str = typer.Option(None, "--fim", help="Processa só até este ponto (ex.: 2:00:00)"),
+    gameplay: str = typer.Option(
+        None, "--gameplay", help="Link ou arquivo de gameplay para alternar com quem fala (sem som)"
+    ),
 ) -> None:
     """Processa um vídeo direto no terminal. O resultado também aparece na interface web."""
     try:
@@ -110,6 +113,7 @@ def run(
             music=music,
             range_start=timecode.parse(inicio),
             range_end=timecode.parse(fim),
+            gameplay_source=gameplay,
         )
     except ValueError as exc:
         raise typer.BadParameter(str(exc)) from exc

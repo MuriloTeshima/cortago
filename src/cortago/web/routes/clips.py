@@ -103,12 +103,16 @@ def save_effects(
     hook_anim: Annotated[bool, Form()] = False,
     hook_sfx: Annotated[str, Form()] = "none",
     progress_bar: Annotated[bool, Form()] = False,
+    gameplay_mode: Annotated[str | None, Form()] = None,  # só vem em vídeos com gameplay de fundo
 ):
     try:
         fx = effects.Effects(jump_cuts, intro_zoom, hook_anim, hook_sfx, progress_bar)
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
     result = edit_or_400(editing.update_effects, clip_id, fx)
+    if gameplay_mode is not None:
+        gp = edit_or_400(editing.update_gameplay_mode, clip_id, gameplay_mode)
+        result = editing.EditResult(gp.clip, result.rerender or gp.rerender)
     return _section(request, "efeitos", *apply(result))
 
 

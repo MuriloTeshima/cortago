@@ -105,23 +105,26 @@ uv run cortago serve        # abre em http://127.0.0.1:8000
 ```
 
 1. Cole o link (ou o caminho de um arquivo), escolha quantos cortes, layout, idioma e duração. Em lives longas,
-   informe o **trecho** (ex.: de `1:20:00` a `2:00:00`): só ele é baixado e transcrito.
+   informe o **trecho** (ex.: de `1:20:00` a `2:00:00`): só ele é baixado e transcrito. Opcionalmente, informe
+   uma **gameplay de fundo** (veja abaixo).
 2. Acompanhe o processamento: download, transcrição, escolha dos cortes e render.
 3. Os cortes aparecem numa **galeria** de miniaturas. "Escolher de novo" pede outra seleção ao Claude.
 4. Clique num corte para abrir o **editor**: player à esquerda (aprovar, descartar, baixar, renderizar de novo)
    e abas à direita, cada uma salva por conta própria e renderiza de novo só quando precisa:
    - **Texto:** título, gancho, descrição e hashtags;
    - **Áudio:** música (com prévia) e volume;
-   - **Efeitos:** cortes de silêncio, zoom de entrada, gancho animado, som do gancho e barra;
+   - **Efeitos:** cortes de silêncio, zoom de entrada, gancho animado, som do gancho, barra e o modo da gameplay de fundo;
    - **Postar:** passo a passo do YouTube Studio, com botão de copiar para cada campo e os limites do YouTube.
 
    Navegue entre os cortes com "Anterior/Próximo". A aba aberta fica no endereço (`/clips/12#audio`).
 5. Abaixo do editor fica a **timeline** do corte, com a régua no tempo do vídeo original, miniaturas,
    forma de onda, os trechos que entram no vídeo e as palavras da legenda:
+   - arraste a **agulha** (ou arraste na régua, miniaturas e onda) para navegar; `←` `→` andam 1 s (`Shift`: 0,1 s);
    - arraste as bordas dos trechos para estender ou encurtar (elas encaixam no começo/fim das palavras);
    - **Dividir no cursor** (atalho `S`) e **×** para remover partes do meio;
    - clique numa palavra para **corrigir a legenda** (Enter confirma, Esc cancela);
    - **Prévia** toca o vídeo original pulando as partes removidas, sem precisar renderizar;
+   - com gameplay de fundo, a última linha mostra, frase a frase, se aparece **quem fala** ou a **gameplay**: clique para trocar;
    - **Salvar e renderizar** gera o vídeo novo; **Restaurar automático** volta ao corte do Claude e aos efeitos.
 
    Os trechos montados à mão substituem o corte automático de silêncios. A prévia mostra o corte, não a
@@ -133,6 +136,7 @@ uv run cortago serve        # abre em http://127.0.0.1:8000
 uv run cortago run "https://www.youtube.com/watch?v=..." -n 5
 uv run cortago run ~/Downloads/live.mp4 --layout crop --lang pt --no-music
 uv run cortago run "https://www.twitch.tv/videos/..." --inicio 1:20:00 --fim 2:00:00
+uv run cortago run "https://www.youtube.com/watch?v=..." --gameplay "https://www.youtube.com/watch?v=..."
 ```
 
 | Opção | Padrão | Descrição |
@@ -143,6 +147,7 @@ uv run cortago run "https://www.twitch.tv/videos/..." --inicio 1:20:00 --fim 2:0
 | `--min/--max` | 20/60 | duração dos cortes em segundos |
 | `--music/--no-music` | com música | música de fundo sorteada da biblioteca |
 | `--inicio/--fim` | vídeo inteiro | processa só um trecho (`1:20:00`, `80:00`, `4800` ou `1h20m`) |
+| `--gameplay` | sem | link ou arquivo de gameplay para alternar com quem fala |
 
 Jobs criados pelo terminal também aparecem na interface.
 
@@ -183,6 +188,21 @@ Pensados para os primeiros segundos e o ritmo do Short. Cada corte liga ou desli
 | Som do gancho | *whoosh*, *pop* ou *impact* gerados pela própria ferramenta, com prévia na edição | `CORTAGO_FX_HOOK_SFX` (`whoosh`) |
 | Barra de progresso | linha fina no topo, na cor de destaque | `CORTAGO_FX_PROGRESS_BAR` (`1`) |
 
+### Gameplay de fundo
+
+Para o corte não ficar só na pessoa falando, informe o link (ou arquivo) de um vídeo de gameplay ao criar o
+vídeo, ou depois, na página do vídeo ("Gameplay de fundo"). A voz continua sempre a do vídeo principal; a
+gameplay entra sem som, cada corte num ponto diferente dela.
+
+- **Alternar com quem fala** (padrão): tela cheia, trocando só entre frases. O Claude indica, na mesma
+  chamada que escolhe os cortes, as frases que ficam melhor na gameplay (narração, contexto, números) e as que
+  ficam em quem fala (gancho, opiniões, piadas, reações e o final). Sem essa indicação, alterna sozinho.
+- **Tela dividida:** quem fala em cima, gameplay embaixo e a legenda na emenda, o corte inteiro.
+
+O modo de cada corte fica na aba Efeitos, e na timeline dá para trocar frase a frase. Do link, só um pedaço de
+até 30 minutos é baixado (só imagem), uma vez, e reaproveitado entre vídeos (`data/gameplay/`). Use gameplay
+que você pode usar no canal (gravada por você ou com licença).
+
 ### Personalizar para o seu canal
 
 A ferramenta é genérica. Tudo que é do canal fica no `.env`:
@@ -197,6 +217,7 @@ A ferramenta é genérica. Tudo que é do canal fica no `.env`:
 | `CORTAGO_YT_CATEGORY` | `Jogos` | categoria indicada no painel "Postar no YouTube" |
 | `CORTAGO_YT_LANGUAGE` | `Português (Brasil)` | idioma indicado no painel |
 | `CORTAGO_YT_EXTRA_TAGS` | (vazio) | tags somadas às de cada corte, separadas por vírgula |
+| `CORTAGO_GAMEPLAY_MODE` | `alternar` | como os cortes de um vídeo com gameplay começam (`alternar`, `dividida` ou `none`) |
 | `CORTAGO_CLAUDE_MODEL` | `claude-opus-5-5` | modelo do Claude usado para escolher os cortes |
 
 ### Onde ficam os dados
@@ -231,6 +252,7 @@ commits, changelog) estão em [CLAUDE.md](CLAUDE.md) e o histórico de versões 
 | `editing.py` | regras de edição de um corte (validar, salvar, decidir se renderiza de novo), sem HTTP |
 | `timeline.py` | regras da timeline: trechos manuais, correções de legenda, janela exibida |
 | `effects.py` | efeitos de retenção: cortes de silêncio, zoom, gancho animado, sons, barra |
+| `gameplay.py` | gameplay de fundo: blocos de frase, quando mostrar a gameplay e conversão para o tempo do vídeo final |
 | `music.py` | biblioteca de músicas (sorteio, créditos) |
 | `post_info.py` | campos prontos para o YouTube (título, descrição, tags) |
 | `db.py` | modelos `Job` e `Clip` (SQLite via SQLModel) e migração automática |

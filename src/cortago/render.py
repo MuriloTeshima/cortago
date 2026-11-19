@@ -1,9 +1,10 @@
 """Recorta o trecho, converte para 9:16 e grava as legendas com FFmpeg."""
 
 import subprocess
+from dataclasses import dataclass, field
 from pathlib import Path
 
-from cortago import config, effects, hardware
+from cortago import config, effects, gameplay, hardware
 
 LAYOUTS: tuple[str, ...] = ("blur", "crop")
 
@@ -20,6 +21,37 @@ LIMITER_CEILING = 0.891
 
 # Nível usado quando o vídeo não tem áudio (a música vira o único som).
 MUSIC_NO_VOICE_LUFS = -20.0
+
+
+@dataclass(frozen=True)
+class Gameplay:
+    """Gameplay de fundo de um corte: arquivo (sem som), ponto de início e quando aparece (tempo do vídeo final)."""
+
+    path: Path
+    offset: float = 0.0
+    mode: str = "alternar"  # alternar | dividida
+    spans: list[effects.Segment] = field(default_factory=list)
+
+
+def _cover(vin: str, w: int, h: int, out: str) -> str:
+    """Preenche w×h cortando o que sobrar (sem faixas pretas)."""
+    return f"{vin}scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},setsar=1{out}"
+
+
+def _gameplay_filter(bg: Gameplay, gin: str, vin: str, layout: str, duration: float, out: str) -> str:
+    """Monta a imagem com a gameplay: tela dividida (quem fala em cima) ou alternando em tela cheia."""
+    W, H = config.OUT_W, config.OUT_H
+    gp = f"{gin}trim=duration={duration:.3f},setpts=PTS-STARTPTS,"
+    if bg.mode == "dividida":
+        half = H // 2
+        return (
+            _cover(gp, W, half, "[gph];") + _cover(vin, W, half, "[top];") + f"[top][gph]vstack=inputs=2{out}"
+        )
+    return (
+        _layout_filter(layout, vin, "[base];")
+        + _cover(gp, W, H, "[gpf];")
+        + f"[base][gpf]overlay=0:0:enable='{gameplay.enable_expr(bg.spans)}':eof_action=repeat{out}"
+    )
 
 
 def _layout_filter(layout: str, vin: str, out: str) -> str:
@@ -107,6 +139,7 @@ def render_clip(
     music_volume: float | None = None,
     segments: list[effects.Segment] | None = None,
     fx: effects.Effects | None = None,
+    gameplay: Gameplay | None = None,
 ) -> None:
     """Renderiza o corte. `segments` vem em segundos do vídeo original (padrão: o corte inteiro)."""
     fx = fx or effects.Effects()
@@ -119,8 +152,18 @@ def render_clip(
     inputs = ["-ss", f"{start:.3f}", "-t", f"{end - start:.3f}", "-i", str(source.resolve())]
     parts, vlabel, voice = _source_filter(rel, has_voice)
 
-    # Vídeo: layout 9:16 → zoom de entrada → legendas → barra de progresso.
-    parts.append(_layout_filter(layout, vlabel, "[vl]"))
+    # Vídeo: layout 9:16 (com ou sem gameplay) → zoom de entrada → legendas → barra de progresso.
+    next_input = 1
+    bg = gameplay
+    if bg is not None and bg.mode != "dividida" and not bg.spans:
+        bg = None  # nenhum bloco de gameplay: não precisa nem abrir o arquivo
+    if bg is not None:
+        # Gameplay sem som, repetida se for mais curta que o corte.
+        inputs += ["-stream_loop", "-1", "-ss", f"{bg.offset:.3f}", "-i", str(bg.path.resolve())]
+        parts.append(_gameplay_filter(bg, f"[{next_input}:v]", vlabel, layout, duration, "[vl]"))
+        next_input += 1
+    else:
+        parts.append(_layout_filter(layout, vlabel, "[vl]"))
     vlabel = "[vl]"
     zoom = effects.INTRO_ZOOMS[fx.intro_zoom]
     if zoom:
@@ -138,7 +181,6 @@ def render_clip(
         vlabel = "[vp]"
 
     # Áudio: voz (já sem as pausas) → música com ducking → som do gancho.
-    next_input = 1
     alabel = voice
     if music is not None:
         # -stream_loop repete a faixa se ela for mais curta que o corte.

@@ -489,3 +489,66 @@ def test_static_url_has_version_to_bust_cache():
     assert url.startswith("/static/timeline.js?v=")
     assert url.split("=")[1] != "0"
     assert static_url("nao-existe.js") == "/static/nao-existe.js?v=0"
+
+
+# ---------- gameplay de fundo ----------
+
+
+def test_create_job_with_gameplay(client, queued):
+    r = client.post(
+        "/jobs",
+        data={"source": "https://youtu.be/x", "gameplay_source": "https://youtu.be/gp"},
+        follow_redirects=False,
+    )
+    job = db.get_job(int(r.headers["location"].rsplit("/", 1)[1]))
+    assert job.gameplay_source == "https://youtu.be/gp"
+
+
+def test_add_gameplay_to_finished_job(client, queued, done_job):
+    job, clip = done_job
+    db.update_job(job.id, source_file="source.mp4")
+    html = client.get(f"/jobs/{job.id}").text
+    assert "Gameplay de fundo" in html
+    r = client.post(f"/jobs/{job.id}/gameplay", data={"gameplay_source": "https://youtu.be/gp"})
+    assert r.status_code == 200 and queued["jobs"] == [(job.id, False)]
+    assert db.get_job(job.id).gameplay_source == "https://youtu.be/gp"
+    assert db.job_clips(job.id)[0].gameplay_mode == "alternar"
+    assert client.post(f"/jobs/{job.id}/gameplay", data={"gameplay_source": "lixo"}).status_code == 400
+
+
+def test_effects_tab_gameplay_mode(client, queued, done_job):
+    job, clip = done_job
+    assert 'name="gameplay_mode"' not in client.get(f"/clips/{clip.id}").text  # vídeo sem gameplay
+    # Sem gameplay no vídeo, não dá para ligar.
+    r = client.post(f"/clips/{clip.id}/efeitos", data={"gameplay_mode": "alternar"})
+    assert r.status_code == 400
+
+    db.update_job(job.id, gameplay_source="https://youtu.be/gp")
+    assert 'name="gameplay_mode"' in client.get(f"/clips/{clip.id}").text
+    r = client.post(f"/clips/{clip.id}/efeitos", data={"gameplay_mode": "dividida"})
+    assert r.status_code == 200 and queued["renders"] == [clip.id]
+    assert db.job_clips(job.id)[0].gameplay_mode == "dividida"
+    assert "tela dividida" in client.get(f"/clips/{clip.id}/player").text
+
+
+def test_timeline_gameplay_blocks_toggle(client, queued, timeline_job):
+    job, clip = timeline_job
+    data = client.get(f"/clips/{clip.id}/timeline.json").json()
+    assert data["gameplay"] == {"mode": "none", "manual": False, "blocks": []}
+
+    db.update_job(job.id, gameplay_source="https://youtu.be/gp")
+    db.update_clip(clip.id, gameplay_mode="alternar")
+    data = client.get(f"/clips/{clip.id}/timeline.json").json()
+    assert data["gameplay"]["blocks"] and data["gameplay"]["blocks"][0]["start"] == 10
+
+    r = client.post(
+        f"/clips/{clip.id}/timeline",
+        json={"segments": [[10, 20], [25, 40]], "words": {}, "gameplay": [[30, 36]]},
+    )
+    assert r.json()["rerender"]
+    assert db.job_clips(job.id)[0].edit["gameplay"] == [[30, 36]]
+    # Salvar sem "gameplay" (ex.: só trechos) mantém os blocos.
+    client.post(f"/clips/{clip.id}/timeline", json={"segments": [[10, 20], [25, 40]]})
+    assert db.job_clips(job.id)[0].edit["gameplay"] == [[30, 36]]
+    bad = client.post(f"/clips/{clip.id}/timeline", json={"segments": [[10, 40]], "gameplay": "x"})
+    assert bad.status_code == 400
