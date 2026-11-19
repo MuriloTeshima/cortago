@@ -18,6 +18,14 @@
         </select>
       </label>
     </div>
+    {% if job.facecam %}
+      <label class="field"><span>Quem fala</span>
+        <select name="facecam_layout">
+          {% for m, label in FACECAM_LAYOUTS.items() %}<option value="{{ m }}" {% if m == clip.facecam_layout %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </label>
+      <p class="muted small">Use "Vídeo original" nos cortes em que a pessoa já aparece em tela cheia.</p>
+    {% endif %}
     {% if job.gameplay_source %}
       <label class="field"><span>Gameplay de fundo</span>
         <select name="gameplay_mode">

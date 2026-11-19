@@ -15,6 +15,7 @@ from cortago import (
     db,
     download,
     effects,
+    facecam,
     gameplay,
     highlights,
     music,
@@ -165,6 +166,23 @@ def default_gameplay_mode(job: Job) -> str:
     return mode if mode in gameplay.MODES and mode != "none" else "alternar"
 
 
+def set_facecam(job_id: int, rect: dict | None) -> Job:
+    """Marca (ou tira, com None) a área da webcam. Cortes passam a usar o layout padrão e voltam para a fila."""
+    rect = facecam.validate(rect)
+    job = db.update_job(job_id, facecam=rect)
+    for clip in db.job_clips(job_id):
+        fields: dict = {}
+        if rect is None and clip.facecam_layout != "none":
+            fields["facecam_layout"] = "none"
+        elif rect is not None and clip.facecam_layout == "none":
+            fields["facecam_layout"] = facecam.DEFAULT_LAYOUT
+        if (rect is not None or fields) and clip.status != ClipStatus.DISCARDED:
+            fields["render_status"] = RenderStatus.PENDING
+        if fields:
+            db.update_clip(clip.id, **fields)  # type: ignore[arg-type]
+    return job
+
+
 def set_gameplay(job_id: int, source: str | None) -> Job:
     """Coloca, troca ou tira (`source` vazio) a gameplay de um vídeo já processado.
 
@@ -275,6 +293,8 @@ def render_clip(clip_id: int) -> Clip:
         segments = effective_segments(source, clip, tr.words, loudness)
         words = timeline.apply_word_fixes(tr.words, timeline.word_fixes(clip.edit))
         background = _gameplay_for(job, clip, tr.words, segments)
+        split_gameplay = background is not None and background.mode == "dividida"
+        cam_on_top = bool(job.facecam) and clip.facecam_layout == "dividida" and not split_gameplay
         subtitles.write_ass(
             words,
             clip.start,
@@ -283,7 +303,9 @@ def render_clip(clip_id: int) -> Clip:
             ass,
             segments=segments,
             hook_anim=fx.hook_anim,
-            split=background is not None and background.mode == "dividida",
+            split=split_gameplay,
+            # Webcam em cima: o gancho vai para logo abaixo dela, em vez de cobrir o rosto.
+            hook_top=facecam.CAM_SHARE + 0.02 if cam_on_top else 0.12,
         )
         render.render_clip(
             source,
@@ -298,6 +320,9 @@ def render_clip(clip_id: int) -> Clip:
             segments=segments,
             fx=fx,
             gameplay=background,
+            cam=render.Facecam(job.facecam, clip.facecam_layout)
+            if job.facecam and clip.facecam_layout != "none"
+            else None,
         )
         render.thumbnail(clip_path(job, clip), clip_path(job, clip, "jpg"))
         write_clip_text(job, clip)

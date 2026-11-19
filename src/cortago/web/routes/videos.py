@@ -102,6 +102,28 @@ def job_reselect(request: Request, job_id: int):
     return _gallery(request, get_job(job_id))
 
 
+@router.post("/jobs/{job_id}/webcam", response_class=HTMLResponse)
+def job_facecam(
+    request: Request,
+    job_id: int,
+    x: Annotated[str, Form()] = "",
+    y: Annotated[str, Form()] = "",
+    w: Annotated[str, Form()] = "",
+    h: Annotated[str, Form()] = "",
+):
+    """Marca (ou tira, com campos vazios) a área da webcam e renderiza os cortes de novo."""
+    job = get_job(job_id)
+    if job.status.running:
+        raise HTTPException(409, "Espere o processamento terminar")
+    rect = {"x": x, "y": y, "w": w, "h": h} if all((x, y, w, h)) else None
+    try:
+        pipeline.set_facecam(job_id, rect)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    worker.submit_job(job_id)
+    return _gallery(request, get_job(job_id))
+
+
 @router.post("/jobs/{job_id}/gameplay", response_class=HTMLResponse)
 def job_gameplay(request: Request, job_id: int, gameplay_source: Annotated[str, Form()] = ""):
     """Coloca, troca ou tira (campo vazio) a gameplay de fundo e renderiza os cortes de novo."""

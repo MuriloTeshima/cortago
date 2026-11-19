@@ -577,3 +577,45 @@ def test_stop_clip_render_from_editor(client, queued, done_job):
     assert db.job_clips(job.id)[0].render_error == pipeline.STOPPED
     assert "Parado" in html and "Renderizar de novo" in html
     assert "Parado" in client.get(f"/clips/{clip.id}/tile").text
+
+
+# ---------- webcam ----------
+
+
+def test_facecam_section_and_save(client, queued, done_job, monkeypatch):
+    from cortago.web.routes import media
+
+    job, clip = done_job
+    folder = pipeline.job_dir(job)
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "source.mp4").write_bytes(b"v")
+    db.update_job(job.id, source_file="source.mp4")
+    monkeypatch.setattr(media.render, "frame", lambda src, t, out: out.write_bytes(b"jpg"))
+
+    assert "data-facecam" in client.get(f"/jobs/{job.id}").text
+    assert client.get(f"/media/{job.id}/quadro.jpg?t=25").content == b"jpg"
+
+    r = client.post(f"/jobs/{job.id}/webcam", data={"x": "0.7", "y": "0.05", "w": "0.25", "h": "0.3"})
+    assert r.status_code == 200 and queued["jobs"] == [(job.id, False)]
+    assert db.get_job(job.id).facecam == {"x": 0.7, "y": 0.05, "w": 0.25, "h": 0.3}
+    assert "webcam em cima" in client.get(f"/clips/{clip.id}/player").text
+
+    assert (
+        client.post(
+            f"/jobs/{job.id}/webcam", data={"x": "0.7", "y": "0", "w": "0.001", "h": "0.3"}
+        ).status_code
+        == 400
+    )
+    client.post(f"/jobs/{job.id}/webcam", data={})
+    assert db.get_job(job.id).facecam is None
+
+
+def test_effects_tab_facecam_layout(client, queued, done_job):
+    job, clip = done_job
+    assert 'name="facecam_layout"' not in client.get(f"/clips/{clip.id}").text
+    assert client.post(f"/clips/{clip.id}/efeitos", data={"facecam_layout": "camera"}).status_code == 400
+    db.update_job(job.id, facecam={"x": 0.7, "y": 0.05, "w": 0.25, "h": 0.3})
+    assert 'name="facecam_layout"' in client.get(f"/clips/{clip.id}").text
+    r = client.post(f"/clips/{clip.id}/efeitos", data={"facecam_layout": "camera"})
+    assert r.status_code == 200 and queued["renders"] == [clip.id]
+    assert db.job_clips(job.id)[0].facecam_layout == "camera"

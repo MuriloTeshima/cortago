@@ -73,10 +73,12 @@ def write_ass(
     segments: list[effects.Segment] | None = None,
     hook_anim: bool = False,
     split: bool = False,
+    hook_top: float = 0.12,
 ) -> None:
     """Legendas do corte. Com `segments` (cortes de silêncio), os tempos seguem o vídeo já sem as pausas.
 
     `split` (tela dividida): a legenda fica logo acima da emenda entre quem fala e a gameplay.
+    `hook_top`: altura do gancho (fração da tela, a partir do topo); com a webcam em cima, desce para não cobrir o rosto.
     """
     w, h = config.OUT_W, config.OUT_H
     lines = [
@@ -84,7 +86,7 @@ def write_ass(
             w=w,
             h=h,
             caption_margin=int(h * (0.47 if split else 0.28)),
-            hook_margin=int(h * 0.12),
+            hook_margin=int(h * hook_top),
             hook_box=ass_color(config.HOOK_BOX_COLOR),
         )
     ]
