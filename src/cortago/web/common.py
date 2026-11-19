@@ -11,6 +11,7 @@ from cortago import (
     db,
     editing,
     effects,
+    facecam,
     gameplay,
     music,
     pipeline,
@@ -62,6 +63,10 @@ def effects_summary(clip: Clip) -> list[str]:
         items.append(f"som {clip.hook_sfx}")
     if clip.progress_bar:
         items.append("barra")
+    if clip.facecam_layout == "dividida":
+        items.append("webcam em cima")
+    elif clip.facecam_layout == "camera":
+        items.append("só a webcam")
     if clip.gameplay_mode == "alternar":
         items.append("gameplay alternando")
     elif clip.gameplay_mode == "dividida":
@@ -83,6 +88,7 @@ templates.env.globals.update(
     static=static_url,
     STOPPED=pipeline.STOPPED,
     GAMEPLAY_MODES=gameplay.MODE_LABELS,
+    FACECAM_LAYOUTS=facecam.LAYOUT_LABELS,
     STATUS_LABELS=STATUS_LABELS,
     LAYOUTS=render.LAYOUTS,
     post_info=post_info.build,

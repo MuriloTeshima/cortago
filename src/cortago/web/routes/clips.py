@@ -104,6 +104,7 @@ def save_effects(
     hook_sfx: Annotated[str, Form()] = "none",
     progress_bar: Annotated[bool, Form()] = False,
     gameplay_mode: Annotated[str | None, Form()] = None,  # só vem em vídeos com gameplay de fundo
+    facecam_layout: Annotated[str | None, Form()] = None,  # só vem em vídeos com webcam marcada
 ):
     try:
         fx = effects.Effects(jump_cuts, intro_zoom, hook_anim, hook_sfx, progress_bar)
@@ -113,6 +114,9 @@ def save_effects(
     if gameplay_mode is not None:
         gp = edit_or_400(editing.update_gameplay_mode, clip_id, gameplay_mode)
         result = editing.EditResult(gp.clip, result.rerender or gp.rerender)
+    if facecam_layout is not None:
+        fc = edit_or_400(editing.update_facecam_layout, clip_id, facecam_layout)
+        result = editing.EditResult(fc.clip, result.rerender or fc.rerender)
     return _section(request, "efeitos", *apply(result))
 
 

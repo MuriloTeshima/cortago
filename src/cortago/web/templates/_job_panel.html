@@ -49,6 +49,30 @@
     </details>
   {% endif %}
 
+  {% if not job.status.running and job.source_file and clips %}
+    {% set fc = job.facecam %}
+    <details class="card facecam-box" {% if fc %}open{% endif %}>
+      <summary>Webcam {% if fc %}<span class="muted small">— marcada</span>{% else %}<span class="muted small">— para vídeos com a pessoa numa miniatura</span>{% endif %}</summary>
+      <p class="muted small">Escolha um quadro em que a webcam aparece e arraste sobre ela para marcar. Os cortes passam a mostrar a webcam ampliada (em cima do vídeo, por padrão; muda por corte na aba Efeitos).</p>
+      <div data-facecam data-job="{{ job.id }}" {% if fc %}data-rect='{{ fc | tojson }}'{% endif %}>
+        <label class="field inline"><span>Quadro</span>
+          <select data-facecam-time>
+            {% for c in clips %}<option value="{{ '%.1f' | format((c.start + c.end) / 2) }}">Corte {{ c.position }} ({{ (job.source_offset + (c.start + c.end) / 2) | time }})</option>{% endfor %}
+          </select>
+        </label>
+        <div class="facecam-stage" data-facecam-stage>
+          <img data-facecam-img alt="Quadro do vídeo" draggable="false">
+          <div class="facecam-rect" data-facecam-rect hidden></div>
+        </div>
+        <form hx-post="/jobs/{{ job.id }}/webcam" hx-target="#job-panel" hx-swap="outerHTML" class="row">
+          {% for k in ("x", "y", "w", "h") %}<input type="hidden" name="{{ k }}" value="{{ fc[k] if fc else '' }}">{% endfor %}
+          <button class="btn primary" type="submit" data-facecam-save {% if not fc %}disabled{% endif %}>Salvar e renderizar</button>
+          {% if fc %}<button class="btn" type="submit" data-facecam-clear>Tirar webcam</button>{% endif %}
+        </form>
+      </div>
+    </details>
+  {% endif %}
+
   {% if job.error %}
     <div class="card error"><strong>Erro:</strong> <code>{{ job.error }}</code></div>
   {% endif %}

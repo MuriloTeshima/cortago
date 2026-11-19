@@ -26,6 +26,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
   indicação, alterna sozinho. Por corte: alternar em tela cheia, tela dividida (quem fala em cima) ou sem
   gameplay (aba Efeitos). Na timeline, uma linha mostra cada frase e troca com um clique. Padrão em
   `CORTAGO_GAMEPLAY_MODE`.
+- **Recorte da webcam**: em vídeos em que a pessoa aparece numa miniatura (live, react, comentário de trailer),
+  marque uma vez a webcam num quadro (página do vídeo, "Webcam") e os cortes mostram ela ampliada: em cima do
+  vídeo (padrão) ou sozinha. Por corte, na aba Efeitos, dá para voltar ao vídeo original. Com gameplay de fundo,
+  é o que aparece nos blocos "quem fala". Com a webcam em cima, o gancho desce para não cobrir o rosto.
 - **Parar** em qualquer etapa: botão na página do vídeo (download, transcrição, escolha dos cortes, render) e no
   player do corte (render). Para na hora: download e transcrição rodam num processo separado que é encerrado, o
   FFmpeg é encerrado e a resposta do Claude é interrompida. O vídeo fica "Parado" e "Continuar" retoma de onde

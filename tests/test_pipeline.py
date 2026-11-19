@@ -64,8 +64,10 @@ def fakes(monkeypatch):
         segments=None,
         fx=None,
         gameplay=None,
+        cam=None,
     ):
         calls["render"].append((start, end))
+        calls.setdefault("cam", []).append(cam)
         calls.setdefault("gameplay", []).append(gameplay)
         calls.setdefault("segments", []).append(segments)
         calls.setdefault("fx", []).append(fx)

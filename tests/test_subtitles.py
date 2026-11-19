@@ -59,3 +59,11 @@ def test_colors_come_from_config(tmp_path, monkeypatch):
     text = out.read_text(encoding="utf-8")
     assert r"{\c&H00953CE3&}OLHA" in text
     assert "&H00540830,&H00540830" in text  # caixa do gancho
+
+
+def test_hook_position_can_move_down(tmp_path):
+    from cortago import subtitles as subs
+
+    out = tmp_path / "x.ass"
+    subs.write_ass([], 0, 10, "olha", out, hook_top=0.42)
+    assert f",{int(1920 * 0.42)},1" in out.read_text(encoding="utf-8").split("Style: Hook")[1].splitlines()[0]

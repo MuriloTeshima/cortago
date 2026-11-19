@@ -204,6 +204,18 @@ O modo de cada corte fica na aba Efeitos, e na timeline dá para trocar frase a 
 até 10 minutos é baixado (só imagem), uma vez, e reaproveitado entre vídeos (`data/gameplay/`). Use gameplay
 que você pode usar no canal (gravada por você ou com licença).
 
+### Webcam (quem fala numa miniatura)
+
+Em lives, reacts e comentários de trailer, a pessoa muitas vezes aparece só num cantinho e some no 9:16. Na
+página do vídeo, abra **Webcam**, escolha um quadro em que ela aparece e arraste sobre ela. Os cortes passam a
+mostrar a webcam ampliada:
+
+- **Webcam em cima, vídeo embaixo** (padrão): formato comum de cortes de streamer;
+- **Só a webcam**: a pessoa em tela cheia;
+- **Vídeo original**: para cortes em que a pessoa já aparece grande (escolha por corte, na aba Efeitos).
+
+Com gameplay de fundo, a webcam é o que aparece nos blocos "quem fala".
+
 ### Personalizar para o seu canal
 
 A ferramenta é genérica. Tudo que é do canal fica no `.env`:
@@ -253,6 +265,7 @@ commits, changelog) estão em [CLAUDE.md](CLAUDE.md) e o histórico de versões 
 | `editing.py` | regras de edição de um corte (validar, salvar, decidir se renderiza de novo), sem HTTP |
 | `timeline.py` | regras da timeline: trechos manuais, correções de legenda, janela exibida |
 | `effects.py` | efeitos de retenção: cortes de silêncio, zoom, gancho animado, sons, barra |
+| `facecam.py` | recorte da webcam: área marcada, layouts e filtro de recorte |
 | `gameplay.py` | gameplay de fundo: blocos de frase, quando mostrar a gameplay e conversão para o tempo do vídeo final |
 | `music.py` | biblioteca de músicas (sorteio, créditos) |
 | `post_info.py` | campos prontos para o YouTube (título, descrição, tags) |

@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from cortago import cancel, config, effects, gameplay, hardware
+from cortago import cancel, config, effects, facecam, gameplay, hardware
 
 LAYOUTS: tuple[str, ...] = ("blur", "crop")
 
@@ -37,17 +37,48 @@ def _cover(vin: str, w: int, h: int, out: str) -> str:
     return f"{vin}scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},setsar=1{out}"
 
 
-def _gameplay_filter(bg: Gameplay, gin: str, vin: str, layout: str, duration: float, out: str) -> str:
+@dataclass(frozen=True)
+class Facecam:
+    """Área da webcam no vídeo original (frações do quadro) e como mostrar (facecam.LAYOUTS)."""
+
+    rect: dict
+    layout: str = facecam.DEFAULT_LAYOUT
+
+
+def _speaker_filter(layout: str, vin: str, out: str, cam: Facecam | None = None) -> str:
+    """Imagem de quem fala: layout do job, ou a webcam recortada (sozinha ou em cima do vídeo)."""
+    W, H = config.OUT_W, config.OUT_H
+    if cam is None or cam.layout == "none":
+        return _layout_filter(layout, vin, out)
+    crop = facecam.crop_filter(cam.rect)
+    if cam.layout == "camera":
+        return _cover(f"{vin}{crop}", W, H, out)
+    top = int(H * facecam.CAM_SHARE) // 2 * 2
+    return (
+        f"{vin}split=2[camsrc][mainsrc];"
+        + _cover(f"[camsrc]{crop}", W, top, "[camv];")
+        + _cover("[mainsrc]", W, H - top, "[mainv];")
+        + f"[camv][mainv]vstack=inputs=2{out}"
+    )
+
+
+def _gameplay_filter(
+    bg: Gameplay, gin: str, vin: str, layout: str, duration: float, out: str, cam: Facecam | None = None
+) -> str:
     """Monta a imagem com a gameplay: tela dividida (quem fala em cima) ou alternando em tela cheia."""
     W, H = config.OUT_W, config.OUT_H
     gp = f"{gin}trim=duration={duration:.3f},setpts=PTS-STARTPTS,"
     if bg.mode == "dividida":
         half = H // 2
+        # Com webcam marcada, a metade de cima mostra a webcam ampliada (e não o vídeo inteiro cortado).
+        speaker = f"{vin}{facecam.crop_filter(cam.rect)}" if cam is not None and cam.layout != "none" else vin
         return (
-            _cover(gp, W, half, "[gph];") + _cover(vin, W, half, "[top];") + f"[top][gph]vstack=inputs=2{out}"
+            _cover(gp, W, half, "[gph];")
+            + _cover(speaker, W, half, "[top];")
+            + f"[top][gph]vstack=inputs=2{out}"
         )
     return (
-        _layout_filter(layout, vin, "[base];")
+        _speaker_filter(layout, vin, "[base];", cam)
         + _cover(gp, W, H, "[gpf];")
         + f"[base][gpf]overlay=0:0:enable='{gameplay.enable_expr(bg.spans)}':eof_action=repeat{out}"
     )
@@ -139,6 +170,7 @@ def render_clip(
     segments: list[effects.Segment] | None = None,
     fx: effects.Effects | None = None,
     gameplay: Gameplay | None = None,
+    cam: Facecam | None = None,
 ) -> None:
     """Renderiza o corte. `segments` vem em segundos do vídeo original (padrão: o corte inteiro)."""
     fx = fx or effects.Effects()
@@ -159,10 +191,10 @@ def render_clip(
     if bg is not None:
         # Gameplay sem som, repetida se for mais curta que o corte.
         inputs += ["-stream_loop", "-1", "-ss", f"{bg.offset:.3f}", "-i", str(bg.path.resolve())]
-        parts.append(_gameplay_filter(bg, f"[{next_input}:v]", vlabel, layout, duration, "[vl]"))
+        parts.append(_gameplay_filter(bg, f"[{next_input}:v]", vlabel, layout, duration, "[vl]", cam))
         next_input += 1
     else:
-        parts.append(_layout_filter(layout, vlabel, "[vl]"))
+        parts.append(_speaker_filter(layout, vlabel, "[vl]", cam))
     vlabel = "[vl]"
     zoom = effects.INTRO_ZOOMS[fx.intro_zoom]
     if zoom:
@@ -234,6 +266,18 @@ def render_clip(
     ]
     # Roda dentro da pasta do .ass pra não precisar escapar o caminho no filtro do FFmpeg.
     cancel.run(cmd, check=True, cwd=ass.parent, text=True, encoding="utf-8", errors="replace")
+
+
+def frame(source: Path, at: float, out: Path, width: int = 960) -> None:
+    """Um quadro do vídeo original (para marcar a webcam)."""
+    cancel.run(
+        [
+            "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+            "-ss", f"{max(at, 0):.2f}", "-i", str(source),
+            "-frames:v", "1", "-vf", f"scale={width}:-2", "-q:v", "3", str(out),
+        ],
+        check=True,
+    )  # fmt: skip
 
 
 def thumbnail(video: Path, out: Path, width: int = 360) -> None:

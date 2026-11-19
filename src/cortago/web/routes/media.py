@@ -26,6 +26,19 @@ def source_media(job_id: int):
     return FileResponse(path, media_type="video/mp4")
 
 
+@router.get("/media/{job_id}/quadro.jpg")
+def source_frame(job_id: int, t: float = 0.0):
+    """Um quadro do vídeo original (tempo do arquivo), para marcar a webcam."""
+    job = get_job(job_id)
+    path = pipeline.job_dir(job) / (job.source_file or "")
+    if not job.source_file or not path.exists():
+        raise HTTPException(404, "Vídeo de origem não encontrado")
+    out = pipeline.job_dir(job) / f"quadro-{t:.1f}.jpg"
+    if not out.exists():
+        render.frame(path, t, out)
+    return FileResponse(out, media_type="image/jpeg")
+
+
 @router.get("/media/{job_id}/{clip_id}.mp4")
 def clip_media(job_id: int, clip_id: int, download: bool = False):
     clip, job = _clip_for_job(job_id, clip_id)

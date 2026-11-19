@@ -75,6 +75,8 @@ class Job(SQLModel, table=True):
     # Gameplay de fundo (ver gameplay.py): link ou arquivo informado e o arquivo já baixado (caminho completo).
     gameplay_source: str | None = None
     gameplay_file: str | None = None
+    # Área da webcam no vídeo ({"x", "y", "w", "h"} em frações do quadro; ver facecam.py). None = não marcada.
+    facecam: dict | None = Field(default=None, sa_column=Column(JSON))
 
     input_tokens: int = 0
     output_tokens: int = 0
@@ -135,6 +137,8 @@ class Clip(SQLModel, table=True):
 
     # Gameplay de fundo: "none", "alternar" ou "dividida" (gameplay.MODES).
     gameplay_mode: str = "none"
+    # Como mostrar quem fala quando o vídeo tem webcam marcada: "none", "dividida" ou "camera" (facecam.LAYOUTS).
+    facecam_layout: str = "none"
     # Onde o Claude indicou mostrar a gameplay ([[ini, fim], ...] no tempo do arquivo). None = sem indicação.
     gameplay_hints: list | None = Field(default=None, sa_column=Column(JSON))
 

@@ -7,7 +7,7 @@ pronta para o usuário.
 
 from dataclasses import dataclass
 
-from cortago import db, effects, gameplay, music, pipeline, timeline
+from cortago import db, effects, facecam, gameplay, music, pipeline, timeline
 from cortago.db import Clip, ClipStatus, Job, RenderStatus
 
 MAX_CLIP_SECONDS = 180
@@ -124,6 +124,16 @@ def update_gameplay_mode(clip_id: int, mode: str) -> EditResult:
     if mode != "none" and not job.gameplay_source:
         raise EditError("Este vídeo não tem gameplay de fundo")
     return EditResult(db.update_clip(clip_id, gameplay_mode=mode), mode != clip.gameplay_mode)
+
+
+def update_facecam_layout(clip_id: int, layout: str) -> EditResult:
+    """Como mostrar quem fala: vídeo original, webcam em cima do vídeo ou só a webcam."""
+    clip, job = _load(clip_id)
+    if layout not in facecam.LAYOUTS:
+        raise EditError("Opção de webcam inválida")
+    if layout != "none" and not job.facecam:
+        raise EditError("Marque a webcam na página do vídeo primeiro")
+    return EditResult(db.update_clip(clip_id, facecam_layout=layout), layout != clip.facecam_layout)
 
 
 def update_timeline(
