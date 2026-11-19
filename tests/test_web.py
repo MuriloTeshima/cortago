@@ -119,8 +119,9 @@ def test_thumbnail_is_generated_on_demand(client, done_job, monkeypatch):
 def test_editor_page(client, done_job):
     job, clip = done_job
     html = client.get(f"/clips/{clip.id}").text
-    for tab in ("texto", "corte", "audio", "efeitos", "postar"):
+    for tab in ("texto", "audio", "efeitos", "postar"):
         assert f'data-tab="{tab}"' in html and f'id="sec-{tab}"' in html
+    assert f'data-timeline data-clip="{clip.id}"' in html and "/static/timeline.js" in html
     assert f'src="/media/{job.id}/{clip.id}.mp4?v=1"' in html
     assert "Corte 1 de 1" in html
     assert f'href="/jobs/{job.id}"' in html
@@ -177,20 +178,12 @@ def test_save_text_requires_title(client, done_job):
     assert client.post(f"/clips/{clip.id}/texto", data={"title": " ", "hook": "olha"}).status_code == 400
 
 
-def test_save_cut(client, queued, done_job):
-    _, clip = done_job
-    client.post(f"/clips/{clip.id}/corte", data={"start": "12", "end": "38"})
-    assert queued["renders"] == [clip.id]
-    assert client.post(f"/clips/{clip.id}/corte", data={"start": "40", "end": "10"}).status_code == 400
-
-
 def test_cut_shown_in_original_video_time(client, done_job):
     job, clip = done_job
     db.update_job(job.id, source_offset=4800, range_start=4800, range_end=7200)
     assert "trecho 1:20:00–2:00:00" in client.get(f"/jobs/{job.id}").text
     html = client.get(f"/clips/{clip.id}").text
     assert "1:20:10–1:20:40" in html
-    assert 'name="start" value="4810.0"' in html
 
 
 def test_save_audio(client, queued, done_job):
@@ -410,3 +403,89 @@ def test_create_job_with_invalid_range(client):
         client.post("/jobs", data={"source": "x", "range_start": "1:00", "range_end": "1:10"}).status_code
         == 400
     )
+
+
+# ---------- timeline ----------
+
+
+@pytest.fixture
+def timeline_job(done_job, monkeypatch):
+    """Job com vídeo de origem e transcrição em disco; imagens e silêncio simulados (sem FFmpeg)."""
+    from cortago.transcribe import Segment, Transcript, Word
+    from cortago.web.routes import timeline as tl_routes
+
+    job, clip = done_job
+    folder = pipeline.job_dir(job)
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "source.mp4").write_bytes(b"video")
+    words = [
+        Word(text="olha", start=12.0, end=12.4),
+        Word(text="isso", start=12.5, end=12.9),
+        Word(text="longe", start=80.0, end=80.5),
+    ]
+    tr = Transcript(language="pt", segments=[Segment(start=12, end=81, text="", words=words)])
+    (folder / "transcript.json").write_text(tr.model_dump_json(), encoding="utf-8")
+    db.update_job(job.id, source_file="source.mp4")
+    monkeypatch.setattr(tl_routes.render, "waveform", lambda src, lo, hi, out: out.write_bytes(b"png"))
+    monkeypatch.setattr(tl_routes.render, "filmstrip", lambda src, lo, hi, out: out.write_bytes(b"jpg"))
+    monkeypatch.setattr(
+        tl_routes.pipeline, "effective_segments", lambda src, c, w, loud: [(c.start, 20.0), (25.0, c.end)]
+    )
+    return db.get_job(job.id), clip
+
+
+def test_timeline_data(client, timeline_job):
+    job, clip = timeline_job
+    data = client.get(f"/clips/{clip.id}/timeline.json").json()
+    assert data["window"] == [0.0, 55.0]  # 10–40 com 15 s de margem (limitado ao começo do vídeo)
+    assert data["segments"] == [[10, 20.0], [25.0, 40]] and not data["manual"]
+    assert [w["text"] for w in data["words"]] == ["olha", "isso"]  # "longe" está fora da janela
+    assert data["source"] == f"/media/{job.id}/origem"
+    assert client.get(data["waveform"]).content == b"png"
+    assert client.get(data["filmstrip"]).content == b"jpg"
+
+
+def test_timeline_save_and_reset(client, queued, timeline_job):
+    _, clip = timeline_job
+    r = client.post(
+        f"/clips/{clip.id}/timeline", json={"segments": [[11, 19], [24, 39]], "words": {"12.00": "Olha"}}
+    )
+    assert r.json()["rerender"] and queued["renders"] == [clip.id]
+    data = client.get(f"/clips/{clip.id}/timeline.json").json()
+    assert data["manual"] and data["segments"] == [[11, 19], [24, 39]]
+    assert data["words"][0] == {
+        "key": "12.00",
+        "text": "Olha",
+        "original": "olha",
+        "start": 12.0,
+        "end": 12.4,
+    }
+
+    assert client.post(f"/clips/{clip.id}/timeline/restaurar").json()["rerender"]
+    assert not client.get(f"/clips/{clip.id}/timeline.json").json()["manual"]
+
+
+def test_timeline_save_rejects_invalid(client, timeline_job):
+    _, clip = timeline_job
+    assert (
+        client.post(f"/clips/{clip.id}/timeline", json={"segments": [[11, 19], [18, 30]]}).status_code == 400
+    )
+    assert client.post(f"/clips/{clip.id}/timeline", json={"segments": "x"}).status_code == 400
+    assert (
+        client.post(f"/clips/{clip.id}/timeline", json={"segments": [[1, 2]], "words": ["x"]}).status_code
+        == 400
+    )
+
+
+def test_source_media(client, timeline_job):
+    job, _ = timeline_job
+    assert client.get(f"/media/{job.id}/origem").content == b"video"
+
+
+def test_static_url_has_version_to_bust_cache():
+    from cortago.web.common import static_url
+
+    url = static_url("timeline.js")
+    assert url.startswith("/static/timeline.js?v=")
+    assert url.split("=")[1] != "0"
+    assert static_url("nao-existe.js") == "/static/nao-existe.js?v=0"

@@ -63,10 +63,18 @@ def effects_summary(clip: Clip) -> list[str]:
     return items
 
 
+def static_url(name: str) -> str:
+    """URL de um arquivo de /static com a data de modificação, para o navegador não usar versão velha do cache."""
+    path = HERE / "static" / name
+    version = int(path.stat().st_mtime) if path.exists() else 0
+    return f"/static/{name}?v={version}"
+
+
 templates = Jinja2Templates(directory=HERE / "templates")
 templates.env.filters["time"] = timecode.format
 templates.env.filters["local"] = _local
 templates.env.globals.update(
+    static=static_url,
     STATUS_LABELS=STATUS_LABELS,
     LAYOUTS=render.LAYOUTS,
     post_info=post_info.build,

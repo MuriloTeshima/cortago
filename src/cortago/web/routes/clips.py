@@ -75,17 +75,6 @@ def save_text(
     return _section(request, "texto", *apply(result))
 
 
-@router.post("/clips/{clip_id}/corte", response_class=HTMLResponse)
-def save_cut(
-    request: Request,
-    clip_id: int,
-    start: Annotated[float, Form(ge=0)],
-    end: Annotated[float, Form(gt=0)],
-):
-    result = edit_or_400(editing.update_cut, clip_id, start=start, end=end)
-    return _section(request, "corte", *apply(result))
-
-
 @router.post("/clips/{clip_id}/audio", response_class=HTMLResponse)
 def save_audio(
     request: Request,

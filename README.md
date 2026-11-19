@@ -111,12 +111,21 @@ uv run cortago serve        # abre em http://127.0.0.1:8000
 4. Clique num corte para abrir o **editor**: player à esquerda (aprovar, descartar, baixar, renderizar de novo)
    e abas à direita, cada uma salva por conta própria e renderiza de novo só quando precisa:
    - **Texto:** título, gancho, descrição e hashtags;
-   - **Corte:** início e fim (no tempo do vídeo original) e a transcrição do trecho;
    - **Áudio:** música (com prévia) e volume;
    - **Efeitos:** cortes de silêncio, zoom de entrada, gancho animado, som do gancho e barra;
    - **Postar:** passo a passo do YouTube Studio, com botão de copiar para cada campo e os limites do YouTube.
 
    Navegue entre os cortes com "Anterior/Próximo". A aba aberta fica no endereço (`/clips/12#audio`).
+5. Abaixo do editor fica a **timeline** do corte, com a régua no tempo do vídeo original, miniaturas,
+   forma de onda, os trechos que entram no vídeo e as palavras da legenda:
+   - arraste as bordas dos trechos para estender ou encurtar (elas encaixam no começo/fim das palavras);
+   - **Dividir no cursor** (atalho `S`) e **×** para remover partes do meio;
+   - clique numa palavra para **corrigir a legenda** (Enter confirma, Esc cancela);
+   - **Prévia** toca o vídeo original pulando as partes removidas, sem precisar renderizar;
+   - **Salvar e renderizar** gera o vídeo novo; **Restaurar automático** volta ao corte do Claude e aos efeitos.
+
+   Os trechos montados à mão substituem o corte automático de silêncios. A prévia mostra o corte, não a
+   música nem os efeitos (esses aparecem no vídeo renderizado).
 
 ### Terminal
 
@@ -220,12 +229,13 @@ commits, changelog) estão em [CLAUDE.md](CLAUDE.md) e o histórico de versões 
 | `render.py` | layouts 9:16 no FFmpeg e mixagem da música (loudnorm + sidechain ducking) |
 | `timecode.py` | tempos digitados (`1:20:00`, `1h20m`…) e links com o minuto exato |
 | `editing.py` | regras de edição de um corte (validar, salvar, decidir se renderiza de novo), sem HTTP |
+| `timeline.py` | regras da timeline: trechos manuais, correções de legenda, janela exibida |
 | `effects.py` | efeitos de retenção: cortes de silêncio, zoom, gancho animado, sons, barra |
 | `music.py` | biblioteca de músicas (sorteio, créditos) |
 | `post_info.py` | campos prontos para o YouTube (título, descrição, tags) |
 | `db.py` | modelos `Job` e `Clip` (SQLite via SQLModel) e migração automática |
 | `worker.py` | fila em segundo plano da interface (uma tarefa por vez) |
-| `web/` | FastAPI + templates Jinja/HTMX, sem build de frontend. Rotas em `web/routes/` (vídeos, cortes, biblioteca, mídia) |
+| `web/` | FastAPI + templates Jinja/HTMX, sem build de frontend. Rotas em `web/routes/` (vídeos, cortes, timeline, biblioteca, mídia) |
 | `cli.py` | comandos `serve`, `run` e `doctor` |
 
 ## Licença

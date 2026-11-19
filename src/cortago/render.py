@@ -224,6 +224,61 @@ def thumbnail(video: Path, out: Path, width: int = 360) -> None:
     )
 
 
+def waveform(source: Path, start: float, end: float, out: Path, width: int = 2000, height: int = 160) -> None:
+    """Forma de onda do trecho (PNG transparente) para a timeline do editor."""
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-ss",
+            f"{start:.3f}",
+            "-t",
+            f"{end - start:.3f}",
+            "-i",
+            str(source),
+            "-filter_complex",
+            f"aformat=channel_layouts=mono,showwavespic=s={width}x{height}:colors=0x8B91A1:scale=sqrt:draw=full",
+            "-frames:v",
+            "1",
+            str(out),
+        ],
+        check=True,
+        capture_output=True,
+    )
+
+
+def filmstrip(source: Path, start: float, end: float, out: Path, frames: int = 30, height: int = 90) -> None:
+    """Faixa de miniaturas do trecho (lado a lado, igualmente espaçadas) para a timeline do editor."""
+    duration = max(end - start, 0.1)
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-ss",
+            f"{start:.3f}",
+            "-t",
+            f"{duration:.3f}",
+            "-i",
+            str(source),
+            "-vf",
+            f"fps={frames}/{duration:.3f},scale=-2:{height},tile={frames}x1",
+            "-frames:v",
+            "1",
+            "-q:v",
+            "5",
+            str(out),
+        ],
+        check=True,
+        capture_output=True,
+    )
+
+
 def has_audio(path: Path) -> bool:
     out = subprocess.run(
         [

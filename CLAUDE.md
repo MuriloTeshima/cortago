@@ -57,4 +57,8 @@ Arquivos de cada job em `data/jobs/<id>/` (`source.*`, `transcript.json`, `clips
 - Trecho do vídeo: `Job.range_start/range_end` estão no relógio do **vídeo original**; `Job.source_offset` é onde o
   arquivo baixado começa (> 0 quando só o trecho foi baixado). Transcrição e cortes ficam no relógio do **arquivo**
   (`Job.window()` converte). A interface mostra e recebe tempos do original (soma/subtrai `source_offset`).
+- Timeline: `Clip.edit` (JSON) é o documento de edição não destrutivo: `segments` (trechos manuais, tempo do arquivo,
+  substituem o corte automático) e `words` (correções de legenda pela chave `timeline.word_key`, início com 2 casas).
+  `pipeline.effective_segments` decide manual > automático > nenhum. Frontend em `static/timeline.js` (JS puro, sem
+  build; prévia toca `/media/<job>/origem` pulando os trechos removidos).
 - IDs usam AUTOINCREMENT: não reaproveitar IDs evita que o navegador mostre vídeo antigo do cache.

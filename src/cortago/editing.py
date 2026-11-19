@@ -7,7 +7,7 @@ pronta para o usuário.
 
 from dataclasses import dataclass
 
-from cortago import db, effects, music, pipeline
+from cortago import db, effects, music, pipeline, timeline
 from cortago.db import Clip, ClipStatus, Job, RenderStatus
 
 MAX_CLIP_SECONDS = 180
@@ -71,8 +71,8 @@ def update_cut(clip_id: int, *, start: float, end: float) -> EditResult:
         raise EditError("O início fica antes do trecho baixado")
     # O corte é guardado no tempo do arquivo baixado.
     start, end = start - job.source_offset, end - job.source_offset
-    limit = job.range_end or job.duration
-    if limit and end > limit - job.source_offset + 0.5:
+    file_end = job.file_end()
+    if file_end and end > file_end + 0.5:
         raise EditError("O fim passa do fim do vídeo (ou do trecho escolhido)")
     rerender = (start, end) != (clip.start, clip.end)
     return EditResult(db.update_clip(clip_id, start=start, end=end), rerender)
@@ -114,6 +114,36 @@ def update_effects(clip_id: int, fx: effects.Effects) -> EditResult:
         progress_bar=fx.progress_bar,
     )
     return EditResult(clip, rerender)
+
+
+def update_timeline(
+    clip_id: int, *, segments: list[tuple[float, float]], word_fixes: dict[str, str] | None = None
+) -> EditResult:
+    """Salva os trechos montados na timeline (em segundos do arquivo) e as correções de legenda.
+
+    Os trechos passam a definir o corte: início e fim viram as bordas do primeiro e do último.
+    """
+    clip, job = _load(clip_id)
+    try:
+        ordered = timeline.validate_segments(segments, job.file_end())
+        fixes = timeline.validate_word_fixes(word_fixes or {})
+    except ValueError as exc:
+        raise EditError(str(exc)) from exc
+    total = sum(b - a for a, b in ordered)
+    if total > MAX_CLIP_SECONDS:
+        raise EditError(f"O corte pode ter no máximo {MAX_CLIP_SECONDS}s")
+    edit = {"segments": [list(s) for s in ordered], "words": fixes}
+    rerender = edit != (clip.edit or {}) or (ordered[0][0], ordered[-1][1]) != (clip.start, clip.end)
+    clip = db.update_clip(clip_id, edit=edit, start=ordered[0][0], end=ordered[-1][1])
+    return EditResult(clip, rerender)
+
+
+def reset_timeline(clip_id: int) -> EditResult:
+    """Descarta os ajustes manuais da timeline e volta ao automático (corte do Claude + efeitos)."""
+    clip, _ = _load(clip_id)
+    if not clip.edit:
+        return EditResult(clip, False)
+    return EditResult(db.update_clip(clip_id, edit=None), True)
 
 
 def set_status(clip_id: int, status: ClipStatus) -> EditResult:

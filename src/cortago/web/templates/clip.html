@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}#{{ clip.position }} {{ clip.title }} · CortaGo{% endblock %}
+{% block head %}<script src="{{ static('timeline.js') }}" defer></script>{% endblock %}
 {% block content %}
 <nav class="editor-nav">
   <a href="/jobs/{{ job.id }}" class="muted">← {{ job.display_title }}</a>
@@ -16,16 +17,25 @@
   <div class="editor-side">
     <div class="tabs" role="tablist">
       <button type="button" role="tab" data-tab="texto">Texto</button>
-      <button type="button" role="tab" data-tab="corte">Corte</button>
       <button type="button" role="tab" data-tab="audio">Áudio</button>
       <button type="button" role="tab" data-tab="efeitos">Efeitos</button>
       <button type="button" role="tab" data-tab="postar">Postar</button>
     </div>
     {% include "editor/_texto.html" %}
-    {% include "editor/_corte.html" %}
     {% include "editor/_audio.html" %}
     {% include "editor/_efeitos.html" %}
     {% include "editor/_postar.html" %}
   </div>
 </div>
+
+<section class="card timeline-card">
+  <h2 class="section-title">Timeline</h2>
+  <div id="timeline" data-timeline data-clip="{{ clip.id }}"><p class="muted small">Carregando timeline…</p></div>
+  {% if transcript %}
+    <details class="tl-transcript">
+      <summary>Transcrição do trecho</summary>
+      <p class="transcript">{{ transcript }}</p>
+    </details>
+  {% endif %}
+</section>
 {% endblock %}
