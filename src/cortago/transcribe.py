@@ -2,12 +2,11 @@
 
 import functools
 import logging
-import subprocess
 from pathlib import Path
 
 from pydantic import BaseModel
 
-from cortago import hardware
+from cortago import cancel, hardware
 
 log = logging.getLogger("cortago.transcribe")
 
@@ -49,7 +48,10 @@ def transcribe(
     else:
         transcript = _transcribe_faster_whisper(audio, setup, language)
     transcript = shift(transcript, start)
-    cache.write_text(transcript.model_dump_json(indent=1), encoding="utf-8")
+    # Grava num temporário e troca: um processo encerrado no meio não deixa cache pela metade.
+    tmp = cache.with_suffix(".tmp")
+    tmp.write_text(transcript.model_dump_json(indent=1), encoding="utf-8")
+    tmp.replace(cache)
     return transcript
 
 
@@ -118,7 +120,7 @@ def load_audio(video: Path, start: float = 0.0, end: float | None = None):
     """Extrai o áudio (mono, 16 kHz) com o FFmpeg, opcionalmente só de `start` até `end` (segundos do arquivo)."""
     import numpy as np
 
-    raw = subprocess.run(
+    raw = cancel.run(
         [
             "ffmpeg",
             "-nostdin",
@@ -139,7 +141,6 @@ def load_audio(video: Path, start: float = 0.0, end: float | None = None):
             "-",
         ],
         check=True,
-        capture_output=True,
     ).stdout
     return np.frombuffer(raw, np.int16).astype(np.float32) / 32768.0
 

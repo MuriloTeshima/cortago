@@ -5,7 +5,7 @@ import json
 import anthropic
 from pydantic import BaseModel
 
-from cortago import config
+from cortago import cancel, config
 from cortago.download import SourceInfo
 from cortago.transcribe import Transcript, to_prompt_text
 
@@ -133,7 +133,8 @@ def pick_clips(
         f"Escolha até {count} cortes.\n\n<transcricao>\n{to_prompt_text(transcript)}\n</transcricao>"
     )
 
-    response = client.beta.messages.create(
+    # Streaming: dá para parar no meio (fechar o stream encerra a requisição).
+    with client.beta.messages.stream(
         model=config.CLAUDE_MODEL,
         max_tokens=16000,
         system=system_prompt(min_s, max_s, gameplay),
@@ -145,7 +146,10 @@ def pick_clips(
         # Se o modelo recusar por falso positivo de segurança, a API tenta de novo noutro modelo.
         betas=["server-side-fallback-2026-07-01"],
         fallbacks="default",
-    )
+    ) as stream:
+        for _event in stream:
+            cancel.check()
+        response = stream.get_final_message()
 
     if response.stop_reason == "refusal":
         raise RuntimeError(f"Claude recusou a requisição: {response.stop_details}")

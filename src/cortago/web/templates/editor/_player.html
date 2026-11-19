@@ -5,6 +5,8 @@
     {% if clip.render_status == "done" %}
       <video controls preload="metadata" poster="/media/{{ job.id }}/{{ clip.id }}.jpg?v={{ clip.render_version }}"
              src="/media/{{ job.id }}/{{ clip.id }}.mp4?v={{ clip.render_version }}"></video>
+    {% elif clip.render_status == "error" and clip.render_error == STOPPED %}
+      <div class="placeholder"><p>Parado</p><p class="muted small">Use "Renderizar de novo" para gerar o vídeo.</p></div>
     {% elif clip.render_status == "error" %}
       <div class="placeholder error">
         <p>Falha ao renderizar</p>
@@ -43,6 +45,10 @@
       {% endif %}
       {% if clip.render_status == "done" %}
         <a class="btn" href="/media/{{ job.id }}/{{ clip.id }}.mp4?download=true">Baixar</a>
+      {% endif %}
+      {% if busy %}
+        <button class="btn danger" hx-post="/clips/{{ clip.id }}/parar" hx-target="#player" hx-swap="outerHTML"
+                title="Para a renderização (e o que estiver na fila para este vídeo)">Parar</button>
       {% endif %}
       {% if not busy and clip.status != "discarded" %}
         <button class="btn" hx-post="/clips/{{ clip.id }}/render" hx-target="#player" hx-swap="outerHTML"

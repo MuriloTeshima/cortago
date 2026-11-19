@@ -1,10 +1,9 @@
 """Recorta o trecho, converte para 9:16 e grava as legendas com FFmpeg."""
 
-import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from cortago import config, effects, gameplay, hardware
+from cortago import cancel, config, effects, gameplay, hardware
 
 LAYOUTS: tuple[str, ...] = ("blur", "crop")
 
@@ -234,15 +233,13 @@ def render_clip(
         str(out.resolve()),
     ]
     # Roda dentro da pasta do .ass pra não precisar escapar o caminho no filtro do FFmpeg.
-    subprocess.run(
-        cmd, check=True, cwd=ass.parent, capture_output=True, text=True, encoding="utf-8", errors="replace"
-    )
+    cancel.run(cmd, check=True, cwd=ass.parent, text=True, encoding="utf-8", errors="replace")
 
 
 def thumbnail(video: Path, out: Path, width: int = 360) -> None:
     """Miniatura do corte (um quadro perto do começo, já com legenda e gancho) para a galeria."""
     at = min(1.5, max(media_duration(video) / 3, 0))
-    subprocess.run(
+    cancel.run(
         [
             "ffmpeg",
             "-y",
@@ -262,13 +259,12 @@ def thumbnail(video: Path, out: Path, width: int = 360) -> None:
             str(out),
         ],
         check=True,
-        capture_output=True,
     )
 
 
 def waveform(source: Path, start: float, end: float, out: Path, width: int = 2000, height: int = 160) -> None:
     """Forma de onda do trecho (PNG transparente) para a timeline do editor."""
-    subprocess.run(
+    cancel.run(
         [
             "ffmpeg",
             "-y",
@@ -288,14 +284,13 @@ def waveform(source: Path, start: float, end: float, out: Path, width: int = 200
             str(out),
         ],
         check=True,
-        capture_output=True,
     )
 
 
 def filmstrip(source: Path, start: float, end: float, out: Path, frames: int = 30, height: int = 90) -> None:
     """Faixa de miniaturas do trecho (lado a lado, igualmente espaçadas) para a timeline do editor."""
     duration = max(end - start, 0.1)
-    subprocess.run(
+    cancel.run(
         [
             "ffmpeg",
             "-y",
@@ -317,12 +312,11 @@ def filmstrip(source: Path, start: float, end: float, out: Path, frames: int = 3
             str(out),
         ],
         check=True,
-        capture_output=True,
     )
 
 
 def has_audio(path: Path) -> bool:
-    out = subprocess.run(
+    out = cancel.run(
         [
             "ffprobe",
             "-v",
@@ -336,7 +330,6 @@ def has_audio(path: Path) -> bool:
             str(path),
         ],
         check=True,
-        capture_output=True,
         text=True,
         encoding="utf-8",
         errors="replace",
@@ -345,10 +338,9 @@ def has_audio(path: Path) -> bool:
 
 
 def media_duration(path: Path) -> float:
-    out = subprocess.run(
+    out = cancel.run(
         ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
         check=True,
-        capture_output=True,
         text=True,
         encoding="utf-8",
         errors="replace",
@@ -371,7 +363,7 @@ def measure_loudness(path: Path, start: float, duration: float) -> float | None:
     """Loudness integrado (LUFS) do áudio no trecho, ou None se não houver áudio audível."""
     if not has_audio(path):
         return None
-    out = subprocess.run(
+    out = cancel.run(
         [
             "ffmpeg",
             "-hide_banner",
@@ -390,7 +382,6 @@ def measure_loudness(path: Path, start: float, duration: float) -> float | None:
             "-",
         ],
         check=True,
-        capture_output=True,
         text=True,
         encoding="utf-8",
         errors="replace",
@@ -402,7 +393,7 @@ def detect_quiet(path: Path, start: float, duration: float, threshold_db: float)
     """Intervalos (em segundos do vídeo original) em que o áudio fica abaixo de `threshold_db`."""
     if not has_audio(path):
         return [(start, start + duration)]
-    out = subprocess.run(
+    out = cancel.run(
         [
             "ffmpeg",
             "-hide_banner",
@@ -421,7 +412,6 @@ def detect_quiet(path: Path, start: float, duration: float, threshold_db: float)
             "-",
         ],
         check=True,
-        capture_output=True,
         text=True,
         encoding="utf-8",
         errors="replace",

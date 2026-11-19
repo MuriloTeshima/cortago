@@ -125,6 +125,15 @@ def set_status(request: Request, clip_id: int, status: Annotated[ClipStatus, For
     return templates.TemplateResponse(request, "editor/_player.html", _context(clip, job))
 
 
+@router.post("/clips/{clip_id}/parar", response_class=HTMLResponse)
+def stop_render(request: Request, clip_id: int):
+    """Para a renderização deste corte (e o que estiver na fila para o mesmo vídeo)."""
+    clip, job = get_clip(clip_id)
+    worker.stop(job.id)  # type: ignore[arg-type]
+    clip, job = get_clip(clip_id)
+    return templates.TemplateResponse(request, "editor/_player.html", _context(clip, job))
+
+
 @router.post("/clips/{clip_id}/render", response_class=HTMLResponse)
 def rerender(request: Request, clip_id: int):
     get_clip(clip_id)

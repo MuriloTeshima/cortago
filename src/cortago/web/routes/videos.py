@@ -88,6 +88,14 @@ def job_retry(request: Request, job_id: int):
     return _gallery(request, get_job(job_id))
 
 
+@router.post("/jobs/{job_id}/parar", response_class=HTMLResponse)
+def job_stop(request: Request, job_id: int):
+    """Para o processamento e as renderizações na fila deste vídeo."""
+    get_job(job_id)
+    worker.stop(job_id)
+    return _gallery(request, get_job(job_id))
+
+
 @router.post("/jobs/{job_id}/reselect", response_class=HTMLResponse)
 def job_reselect(request: Request, job_id: int):
     worker.submit_job(job_id, reselect=True)
