@@ -18,6 +18,14 @@
         </select>
       </label>
     </div>
+    {% if job.gameplay_source %}
+      <label class="field"><span>Gameplay de fundo</span>
+        <select name="gameplay_mode">
+          {% for m, label in GAMEPLAY_MODES.items() %}<option value="{{ m }}" {% if m == clip.gameplay_mode %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </label>
+      <p class="muted small">Em "Alternar", troque frase a frase na linha <strong>Gameplay</strong> da timeline.</p>
+    {% endif %}
     <div class="actions"><button class="btn primary" type="submit">Salvar e renderizar</button>{% include "editor/_saved.html" %}</div>
   </form>
 </section>

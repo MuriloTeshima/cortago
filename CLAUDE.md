@@ -61,4 +61,9 @@ Arquivos de cada job em `data/jobs/<id>/` (`source.*`, `transcript.json`, `clips
   substituem o corte automático) e `words` (correções de legenda pela chave `timeline.word_key`, início com 2 casas).
   `pipeline.effective_segments` decide manual > automático > nenhum. Frontend em `static/timeline.js` (JS puro, sem
   build; prévia toca `/media/<job>/origem` pulando os trechos removidos).
+- Gameplay de fundo (`gameplay.py`): `Job.gameplay_source/gameplay_file` (arquivo compartilhado em `data/gameplay/`),
+  `Clip.gameplay_mode` (`none|alternar|dividida`), `Clip.gameplay_hints` (indicação do Claude) e `Clip.edit["gameplay"]`
+  (ajuste manual). Prioridade manual > Claude > alternância automática. A imagem só troca nas bordas de
+  `gameplay.blocks` (frases) e o gancho fica em quem fala; `gameplay.to_output` passa os tempos pelos cortes de silêncio.
+  A voz é sempre do vídeo principal.
 - IDs usam AUTOINCREMENT: não reaproveitar IDs evita que o navegador mostre vídeo antigo do cache.

@@ -20,6 +20,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
   sem alterar a transcrição nem o corte original.
   A agulha pode ser arrastada (ou arraste na régua, miniaturas, onda ou trechos), com rolagem automática nas
   bordas; ← → movem 1s (Shift: 0,1s).
+- **Gameplay de fundo**: informe o link (ou arquivo) de uma gameplay ao criar o vídeo (`--gameplay` na CLI) ou
+  depois, na página do vídeo. A imagem alterna, entre frases, entre quem fala e a gameplay (sem som), e o gancho
+  fica sempre em quem fala. O Claude indica as frases de gameplay na mesma chamada que escolhe os cortes; sem
+  indicação, alterna sozinho. Por corte: alternar em tela cheia, tela dividida (quem fala em cima) ou sem
+  gameplay (aba Efeitos). Na timeline, uma linha mostra cada frase e troca com um clique. Padrão em
+  `CORTAGO_GAMEPLAY_MODE`.
 - Arquivos de `/static` com versão no endereço: o navegador não usa mais JS/CSS antigo depois de atualizar.
 - Galeria de cortes na página do vídeo, com miniatura de cada corte (gerada no render, ou na primeira
   visita para cortes antigos).

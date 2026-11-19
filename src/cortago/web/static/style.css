@@ -311,6 +311,13 @@ summary { cursor: pointer; color: var(--muted); font-size: 0.9rem; }
 .tl-knob:hover { filter: brightness(1.15); }
 .scrubbing, .scrubbing * { cursor: grabbing !important; user-select: none; }
 .tl-ruler, .tl-strip, .tl-wave { touch-action: none; }
+.tl-gp { height: 30px; }
+.tl-gp-block {
+  position: absolute; top: 4px; height: 22px; padding: 0 0.4rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  font-size: 0.72rem; border-radius: 5px; border: 1px dashed var(--border); background: transparent; color: var(--muted); cursor: pointer;
+}
+.tl-gp-block.on { border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--text); }
+.tl-gp-block:hover { border-color: var(--accent); }
 .tl-help { margin: 0.6rem 0 0; }
 .tl-transcript { margin-top: 0.75rem; }
 @media (max-width: 800px) { .tl-body { grid-template-columns: 1fr; } }

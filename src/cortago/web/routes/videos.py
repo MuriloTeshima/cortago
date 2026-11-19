@@ -48,6 +48,7 @@ def create_job(
     music_enabled: Annotated[bool, Form(alias="music")] = False,  # checkbox: ausente quando desmarcado
     range_start: Annotated[str, Form()] = "",
     range_end: Annotated[str, Form()] = "",
+    gameplay_source: Annotated[str, Form()] = "",
 ):
     if not source.strip():
         raise HTTPException(400, "Informe uma URL ou caminho de arquivo")
@@ -62,6 +63,7 @@ def create_job(
             music=music_enabled,
             range_start=timecode.parse(range_start),
             range_end=timecode.parse(range_end),
+            gameplay_source=gameplay_source or None,
         )
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
@@ -89,6 +91,20 @@ def job_retry(request: Request, job_id: int):
 @router.post("/jobs/{job_id}/reselect", response_class=HTMLResponse)
 def job_reselect(request: Request, job_id: int):
     worker.submit_job(job_id, reselect=True)
+    return _gallery(request, get_job(job_id))
+
+
+@router.post("/jobs/{job_id}/gameplay", response_class=HTMLResponse)
+def job_gameplay(request: Request, job_id: int, gameplay_source: Annotated[str, Form()] = ""):
+    """Coloca, troca ou tira (campo vazio) a gameplay de fundo e renderiza os cortes de novo."""
+    job = get_job(job_id)
+    if job.status.running:
+        raise HTTPException(409, "Espere o processamento terminar")
+    try:
+        pipeline.set_gameplay(job_id, gameplay_source)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    worker.submit_job(job_id)
     return _gallery(request, get_job(job_id))
 
 

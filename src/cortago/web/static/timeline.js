@@ -42,6 +42,7 @@ class Timeline {
     }
     this.data = await res.json();
     this.segments = this.data.segments.map((s) => [...s]);
+    this.gpBlocks = (this.data.gameplay?.blocks || []).map((b) => ({ ...b }));
     this.fixes = {};
     for (const w of this.data.words) if (w.text !== w.original) this.fixes[w.key] = w.text;
     this.dirty = false;
@@ -127,6 +128,7 @@ class Timeline {
         "Arraste as bordas dos trechos para ajustar (elas encaixam no começo/fim das palavras), × remove um trecho, ",
         "clique numa palavra para corrigir a legenda. Arraste a agulha (ou na régua, miniaturas e onda) para navegar; ",
         "← → movem 1s (Shift: 0,1s), Espaço toca/pausa, S divide.",
+        this.gpBlocks.length ? " Na última linha, clique num bloco para trocar entre quem fala e a gameplay." : "",
       ),
     );
     this.drawTracks();
@@ -165,9 +167,15 @@ class Timeline {
     const knob = el("span", { class: "tl-knob", title: "Arraste para navegar (← → movem 1s; Shift: 0,1s)" });
     knob.addEventListener("pointerdown", (e) => this.scrub(e));
     this.playhead = el("div", { class: "tl-playhead" }, knob);
-    this.inner.append(ruler, strip, wave, this.segRow, this.wordRow, this.playhead);
+    this.inner.append(ruler, strip, wave, this.segRow, this.wordRow);
+    if (this.gpBlocks.length) {
+      this.gpRow = el("div", { class: "tl-row tl-gp" });
+      this.inner.append(this.gpRow);
+    } else this.gpRow = null;
+    this.inner.append(this.playhead);
     this.drawSegments();
     this.drawWords();
+    this.drawGameplay();
   }
 
   drawSegments() {
@@ -213,6 +221,30 @@ class Timeline {
       return chip;
     });
     this.drawWordState();
+  }
+
+  // Linha "Gameplay": cada bloco de frase mostra quem fala ou a gameplay. Clique troca.
+  drawGameplay() {
+    if (!this.gpRow) return;
+    this.gpRow.replaceChildren();
+    this.gpBlocks.forEach((b) => {
+      const chip = el(
+        "button",
+        {
+          class: `tl-gp-block${b.on ? " on" : ""}`,
+          type: "button",
+          title: `${fmt(b.start + this.data.offset)}–${fmt(b.end + this.data.offset)} · clique para trocar`,
+          style: { left: `${this.x(b.start)}px`, width: `${Math.max(this.x(b.end) - this.x(b.start) - 2, 4)}px` },
+        },
+        b.on ? "Gameplay" : "Quem fala",
+      );
+      chip.addEventListener("click", () => {
+        b.on = !b.on;
+        this.changed();
+        this.drawGameplay();
+      });
+      this.gpRow.append(chip);
+    });
   }
 
   drawWordState() {
@@ -465,7 +497,11 @@ class Timeline {
     const res = await fetch(`/clips/${this.clipId}/timeline`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ segments: this.segments, words: this.fixes }),
+      body: JSON.stringify({
+        segments: this.segments,
+        words: this.fixes,
+        ...(this.gpRow ? { gameplay: this.gpBlocks.filter((b) => b.on).map((b) => [b.start, b.end]) } : {}),
+      }),
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));

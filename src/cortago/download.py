@@ -93,6 +93,60 @@ def _download(url: str, job_dir: Path, section: tuple[float, float | None] | Non
     )
 
 
+# Da gameplay basta um pedaço: pula a abertura e pega até 30 min (cada corte usa um ponto diferente dele).
+GAMEPLAY_SKIP = 30.0
+GAMEPLAY_MAX_SECONDS = 1800.0
+
+
+def gameplay_name(source: str) -> str:
+    import hashlib
+
+    return hashlib.sha1(source.strip().encode("utf-8")).hexdigest()[:16]
+
+
+def fetch_gameplay(source: str, folder: Path) -> Path:
+    """Arquivo da gameplay de fundo. Arquivos locais são usados no lugar; links são baixados (só vídeo) uma vez."""
+    if is_local(source):
+        return Path(source).expanduser().resolve()
+    folder.mkdir(parents=True, exist_ok=True)
+    name = gameplay_name(source)
+    done = [p for p in folder.glob(f"{name}.*") if not p.name.endswith((".part", ".ytdl"))]
+    if done:
+        return done[0]
+
+    import yt_dlp
+    from yt_dlp.utils import download_range_func
+
+    def options(section: bool) -> dict:
+        opts = {
+            "noplaylist": True,
+            "quiet": True,
+            "no_warnings": True,
+            "noprogress": True,
+            # Só a imagem: a voz vem sempre do vídeo principal.
+            "format": "bv*[height<=1080][ext=mp4]/bv*[height<=1080]/b[height<=1080]/b",
+            "outtmpl": str(folder / f"{name}.%(ext)s"),
+        }
+        if section:
+            opts["download_ranges"] = download_range_func(
+                None, [(GAMEPLAY_SKIP, GAMEPLAY_SKIP + GAMEPLAY_MAX_SECONDS)]
+            )
+        return opts
+
+    try:
+        with yt_dlp.YoutubeDL(options(section=True)) as ydl:
+            ydl.extract_info(source, download=True)
+    except Exception:
+        for leftover in folder.glob(f"{name}.*"):
+            leftover.unlink()
+        with yt_dlp.YoutubeDL(options(section=False)) as ydl:  # site sem download de trecho
+            ydl.extract_info(source, download=True)
+    done = [p for p in folder.glob(f"{name}.*") if not p.name.endswith((".part", ".ytdl"))]
+    if not done:
+        raise RuntimeError("o download da gameplay não gerou o arquivo de vídeo")
+    return done[0]
+
+
 def probe_duration(path: Path) -> float:
     out = subprocess.run(
         ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],

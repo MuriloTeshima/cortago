@@ -30,11 +30,20 @@ def fakes(monkeypatch):
         words = [Word(text=f"p{i}", start=i, end=i + 0.8) for i in range(100)]
         return Transcript(language="pt", segments=[Segment(start=0, end=100, text="", words=words)])
 
-    def pick_clips(info, tr, count, min_s, max_s):
+    def pick_clips(info, tr, count, min_s, max_s, gameplay=False):
         calls["select"] += 1
+        calls.setdefault("gameplay_prompt", []).append(gameplay)
         sugs = [
             ClipSuggestion(
-                start=10, end=40, title="A", hook="h", description="d", hashtags=["gta6"], score=9, reason="r"
+                start=10,
+                end=40,
+                title="A",
+                hook="h",
+                description="d",
+                hashtags=["gta6"],
+                score=9,
+                reason="r",
+                gameplay=[(20, 28)] if gameplay else None,
             ),
             ClipSuggestion(
                 start=50, end=80, title="B", hook="h", description="d", hashtags=[], score=7, reason="r"
@@ -54,15 +63,25 @@ def fakes(monkeypatch):
         music_volume=None,
         segments=None,
         fx=None,
+        gameplay=None,
     ):
         calls["render"].append((start, end))
+        calls.setdefault("gameplay", []).append(gameplay)
         calls.setdefault("segments", []).append(segments)
         calls.setdefault("fx", []).append(fx)
         calls["music"].append(music.name if music else None)
         calls["volume"].append(music_volume)
         out.write_bytes(b"mp4")
 
+    def fetch_gameplay(source, folder):
+        calls["gameplay_download"] = calls.get("gameplay_download", 0) + 1
+        folder.mkdir(parents=True, exist_ok=True)
+        path = folder / "gp.mp4"
+        path.write_bytes(b"gp")
+        return path
+
     monkeypatch.setattr(pipeline.download, "fetch", fetch)
+    monkeypatch.setattr(pipeline.download, "fetch_gameplay", fetch_gameplay)
     monkeypatch.setattr(pipeline.transcribe, "transcribe", transcribe)
     monkeypatch.setattr(pipeline.highlights, "pick_clips", pick_clips)
     monkeypatch.setattr(pipeline.render, "render_clip", render_clip)
@@ -311,3 +330,62 @@ def test_range_start_after_video_end(fakes):
     with pytest.raises(ValueError, match="começa em"):
         pipeline.run_job(job.id)
     assert db.get_job(job.id).status == JobStatus.ERROR
+
+
+# ---------- gameplay de fundo ----------
+
+
+def test_job_with_gameplay_downloads_it_and_asks_claude_for_spans(fakes):
+    job = pipeline.create_job("https://x", gameplay_source="https://gameplay")
+    pipeline.run_job(job.id)
+    job = db.get_job(job.id)
+    assert fakes["gameplay_download"] == 1
+    assert job.gameplay_file and job.gameplay_file.endswith("gp.mp4")
+    assert fakes["gameplay_prompt"] == [True]
+    first, second = db.job_clips(job.id)
+    assert first.gameplay_mode == "alternar" and first.gameplay_hints == [[20, 28]]
+    assert second.gameplay_hints is None
+    bg = fakes["gameplay"][0]
+    assert bg.mode == "alternar" and bg.path.name == "gp.mp4"
+    # Indicação do Claude: 20–28s do arquivo. Sem pontuação, os blocos têm ~8s (17,9–25,9 fica 75% coberto)
+    # e o resultado sai no tempo do corte, que começa em 10s.
+    assert bg.spans == [(7.9, 15.9)]
+
+
+def test_job_without_gameplay_renders_without_it(fakes):
+    job = pipeline.create_job("https://x")
+    pipeline.run_job(job.id)
+    assert fakes["gameplay_prompt"] == [False]
+    assert fakes["gameplay"] == [None, None]
+    assert "gameplay_download" not in fakes
+    assert all(c.gameplay_mode == "none" for c in db.job_clips(job.id))
+
+
+def test_gameplay_mode_from_config(fakes, monkeypatch):
+    monkeypatch.setattr(pipeline.config, "GAMEPLAY_MODE", "dividida")
+    job = pipeline.create_job("https://x", gameplay_source="https://gameplay")
+    pipeline.run_job(job.id)
+    assert {c.gameplay_mode for c in db.job_clips(job.id)} == {"dividida"}
+    assert fakes["gameplay"][0].spans == [(0.0, 30.0)]
+
+
+def test_set_gameplay_on_finished_job_rerenders_clips(fakes):
+    job = pipeline.create_job("https://x")
+    pipeline.run_job(job.id)
+    pipeline.set_gameplay(job.id, "https://gameplay")
+    clips = db.job_clips(job.id)
+    assert all(c.gameplay_mode == "alternar" and c.render_status == "pending" for c in clips)
+    pipeline.run_job(job.id)
+    assert fakes["gameplay_download"] == 1
+    assert fakes["select"] == 1  # não pede cortes de novo
+    assert all(g is not None and g.spans for g in fakes["gameplay"][2:])
+
+    pipeline.set_gameplay(job.id, "")
+    assert db.get_job(job.id).gameplay_source is None
+    assert all(c.gameplay_mode == "none" for c in db.job_clips(job.id))
+
+
+def test_set_gameplay_rejects_garbage(fakes):
+    job = pipeline.create_job("https://x")
+    with pytest.raises(ValueError):
+        pipeline.set_gameplay(job.id, "isso nao e link")

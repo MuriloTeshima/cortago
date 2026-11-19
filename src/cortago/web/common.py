@@ -11,6 +11,7 @@ from cortago import (
     db,
     editing,
     effects,
+    gameplay,
     music,
     pipeline,
     post_info,
@@ -60,6 +61,10 @@ def effects_summary(clip: Clip) -> list[str]:
         items.append(f"som {clip.hook_sfx}")
     if clip.progress_bar:
         items.append("barra")
+    if clip.gameplay_mode == "alternar":
+        items.append("gameplay alternando")
+    elif clip.gameplay_mode == "dividida":
+        items.append("tela dividida")
     return items
 
 
@@ -75,6 +80,7 @@ templates.env.filters["time"] = timecode.format
 templates.env.filters["local"] = _local
 templates.env.globals.update(
     static=static_url,
+    GAMEPLAY_MODES=gameplay.MODE_LABELS,
     STATUS_LABELS=STATUS_LABELS,
     LAYOUTS=render.LAYOUTS,
     post_info=post_info.build,

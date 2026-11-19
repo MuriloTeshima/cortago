@@ -9,6 +9,7 @@
         {% if job.range_start or job.range_end %} · trecho {{ (job.range_start or 0) | time }}–{{ (job.range_end | time) if job.range_end else "fim" }}{% endif %}
         · layout {{ job.layout }} · {{ job.min_seconds }}–{{ job.max_seconds }}s
         · {{ "com" if job.music else "sem" }} música
+        {% if job.gameplay_source %} · com gameplay de fundo{% endif %}
         {% if job.input_tokens %} · {{ job.input_tokens }} / {{ job.output_tokens }} tokens{% endif %}
       </p>
     </div>
@@ -27,6 +28,18 @@
       {% endif %}
     </div>
   </div>
+
+  {% if not job.status.running and job.source_file %}
+    <details class="card gameplay-box" {% if job.gameplay_source %}open{% endif %}>
+      <summary>Gameplay de fundo {% if job.gameplay_source %}<span class="muted small">— ativa</span>{% endif %}</summary>
+      <form hx-post="/jobs/{{ job.id }}/gameplay" hx-target="#job-panel" hx-swap="outerHTML" class="row"
+            hx-confirm="Renderizar os cortes de novo com essa gameplay?">
+        <input name="gameplay_source" value="{{ job.gameplay_source or '' }}" placeholder="Link ou arquivo de um vídeo de gameplay (vazio = sem gameplay)">
+        <button class="btn" type="submit">{{ "Trocar" if job.gameplay_source else "Adicionar" }}</button>
+      </form>
+      <p class="muted small">Cortes sem gameplay passam a alternar com ela. Em cada corte dá para escolher tela cheia alternando, tela dividida ou nenhuma (aba Efeitos) e trocar frase a frase na timeline.</p>
+    </details>
+  {% endif %}
 
   {% if job.error %}
     <div class="card error"><strong>Erro:</strong> <code>{{ job.error }}</code></div>

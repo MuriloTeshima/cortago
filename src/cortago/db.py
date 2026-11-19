@@ -71,6 +71,10 @@ class Job(SQLModel, table=True):
     # Em que segundo do vídeo original o arquivo baixado começa (> 0 quando só o trecho foi baixado).
     source_offset: float = 0.0
 
+    # Gameplay de fundo (ver gameplay.py): link ou arquivo informado e o arquivo já baixado (caminho completo).
+    gameplay_source: str | None = None
+    gameplay_file: str | None = None
+
     input_tokens: int = 0
     output_tokens: int = 0
     created_at: datetime = Field(default_factory=_now)
@@ -128,9 +132,15 @@ class Clip(SQLModel, table=True):
     hook_sfx: str = "none"
     progress_bar: bool = False
 
+    # Gameplay de fundo: "none", "alternar" ou "dividida" (gameplay.MODES).
+    gameplay_mode: str = "none"
+    # Onde o Claude indicou mostrar a gameplay ([[ini, fim], ...] no tempo do arquivo). None = sem indicação.
+    gameplay_hints: list | None = Field(default=None, sa_column=Column(JSON))
+
     # Ajustes manuais da timeline (edição não destrutiva). None = nada ajustado à mão.
     # {"segments": [[ini, fim], ...]  # trechos que entram, em segundos do arquivo (substitui o corte automático)
-    #  "words": {"12.34": "texto"}}   # correções de legenda, pela posição da palavra (início com 2 casas)
+    #  "words": {"12.34": "texto"}    # correções de legenda, pela posição da palavra (início com 2 casas)
+    #  "gameplay": [[ini, fim], ...]} # quando a gameplay aparece (substitui o plano automático)
     edit: dict | None = Field(default=None, sa_column=Column(JSON))
 
     @property
