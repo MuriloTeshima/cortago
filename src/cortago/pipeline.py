@@ -10,6 +10,7 @@ from pathlib import Path
 from sqlmodel import delete
 
 from cortago import (
+    cancel,
     config,
     db,
     download,
@@ -100,16 +101,22 @@ def run_job(job_id: int, log: Log = _noop, reselect: bool = False) -> Job:
     """Executa (ou retoma) todas as etapas. Etapas já concluídas são reaproveitadas."""
     try:
         job = _download(job_id, log)
+        cancel.check()
         tr = _transcribe(job, log)
+        cancel.check()
         if reselect or not db.job_clips(job_id):
             _select(job, tr, log)
         db.update_job(job_id, status=JobStatus.RENDERING)
         for clip in db.job_clips(job_id):
             if clip.status != ClipStatus.DISCARDED and clip.render_status != RenderStatus.DONE:
+                cancel.check()
                 log(f"Renderizando corte {clip.position}...")
                 render_clip(clip.id)  # type: ignore[arg-type]
         log("Pronto.")
         return db.update_job(job_id, status=JobStatus.DONE, error=None)
+    except cancel.Cancelled:
+        mark_stopped(job_id)
+        raise
     except Exception as exc:
         db.update_job(job_id, status=JobStatus.ERROR, error=describe_error(exc))
         raise
@@ -124,7 +131,7 @@ def _download(job_id: int, log: Log) -> Job:
     db.update_job(job_id, status=JobStatus.DOWNLOADING, error=None)
     section = (job.range_start or 0.0, job.range_end) if (job.range_start or job.range_end) else None
     log("Baixando trecho do vídeo..." if section else "Baixando vídeo...")
-    info = download.fetch(job.source, job_dir(job), section)
+    info = cancel.call(download.fetch, job.source, job_dir(job), section)
     if job.range_start and job.range_start >= info.duration:
         raise ValueError(
             f"o trecho começa em {timecode.format(job.range_start)}, mas o vídeo tem só {timecode.format(info.duration)}"
@@ -147,7 +154,7 @@ def _ensure_gameplay(job: Job, log: Log) -> Job:
         return job
     db.update_job(job.id, status=JobStatus.DOWNLOADING, error=None)  # type: ignore[arg-type]
     log("Baixando gameplay de fundo...")
-    path = download.fetch_gameplay(job.gameplay_source, config.gameplay_dir())
+    path = cancel.call(download.fetch_gameplay, job.gameplay_source, config.gameplay_dir())
     return db.update_job(job.id, gameplay_file=str(path))  # type: ignore[arg-type]
 
 
@@ -187,11 +194,13 @@ def set_gameplay(job_id: int, source: str | None) -> Job:
 def _transcribe(job: Job, log: Log) -> transcribe.Transcript:
     db.update_job(job.id, status=JobStatus.TRANSCRIBING)  # type: ignore[arg-type]
     log("Transcrevendo...")
-    return transcribe.transcribe(
+    # Processo separado: a transcrição não tem como ser interrompida por dentro.
+    return cancel.call(
+        transcribe.transcribe,
         job_dir(job) / job.source_file,  # type: ignore[operator]
         job_dir(job) / "transcript.json",
         job.language,
-        window=job.window(),
+        job.window(),
     )
 
 
@@ -292,6 +301,9 @@ def render_clip(clip_id: int) -> Clip:
         )
         render.thumbnail(clip_path(job, clip), clip_path(job, clip, "jpg"))
         write_clip_text(job, clip)
+    except cancel.Cancelled:
+        db.update_clip(clip_id, render_status=RenderStatus.ERROR, render_error=STOPPED)
+        raise
     except Exception as exc:
         db.update_clip(clip_id, render_status=RenderStatus.ERROR, render_error=describe_error(exc))
         raise
@@ -347,6 +359,25 @@ def _music_file(clip: Clip):
             f"Música '{clip.music_track}' não está mais em {config.MUSIC_DIR}. Escolha outra na edição do corte."
         )
     return path
+
+
+STOPPED = 'Parado antes de terminar. Use "Renderizar de novo".'
+
+
+def mark_stopped(job_id: int) -> None:
+    """Depois de parar: o vídeo fica "Parado" (se estava processando) e cortes na fila ou renderizando,
+    com aviso para renderizar de novo (senão ficariam "Na fila" para sempre)."""
+    job = db.get_job(job_id)
+    if job is None:
+        return
+    if job.status.running:
+        db.update_job(job_id, status=JobStatus.CANCELLED, error=None)
+    for clip in db.job_clips(job_id):
+        if clip.status != ClipStatus.DISCARDED and clip.render_status in (
+            RenderStatus.PENDING,
+            RenderStatus.RENDERING,
+        ):
+            db.update_clip(clip.id, render_status=RenderStatus.ERROR, render_error=STOPPED)  # type: ignore[arg-type]
 
 
 def describe_error(exc: Exception) -> str:

@@ -389,3 +389,32 @@ def test_set_gameplay_rejects_garbage(fakes):
     job = pipeline.create_job("https://x")
     with pytest.raises(ValueError):
         pipeline.set_gameplay(job.id, "isso nao e link")
+
+
+# ---------- parar ----------
+
+
+def test_stop_during_render_then_continue(fakes, monkeypatch):
+    from cortago import cancel
+
+    job = pipeline.create_job("https://x")
+    real_render = pipeline.render.render_clip
+
+    def stop_on_first(*args, **kwargs):
+        raise cancel.Cancelled()
+
+    monkeypatch.setattr(pipeline.render, "render_clip", stop_on_first)
+    with pytest.raises(cancel.Cancelled):
+        pipeline.run_job(job.id)
+    assert db.get_job(job.id).status == JobStatus.CANCELLED
+    assert all(
+        c.render_status == RenderStatus.ERROR and c.render_error == pipeline.STOPPED
+        for c in db.job_clips(job.id)
+    )
+
+    # "Continuar": refaz só o que faltou (não baixa nem pede cortes de novo).
+    monkeypatch.setattr(pipeline.render, "render_clip", real_render)
+    pipeline.run_job(job.id)
+    assert db.get_job(job.id).status == JobStatus.DONE
+    assert fakes["download"] == 1 and fakes["select"] == 1
+    assert all(c.render_status == RenderStatus.DONE for c in db.job_clips(job.id))

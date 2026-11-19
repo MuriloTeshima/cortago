@@ -24,10 +24,11 @@ class JobStatus(StrEnum):
     RENDERING = "rendering"
     DONE = "done"
     ERROR = "error"
+    CANCELLED = "cancelled"  # parado pelo usuário; "Continuar" retoma de onde parou
 
     @property
     def running(self) -> bool:
-        return self not in (JobStatus.DONE, JobStatus.ERROR)
+        return self not in (JobStatus.DONE, JobStatus.ERROR, JobStatus.CANCELLED)
 
 
 class ClipStatus(StrEnum):

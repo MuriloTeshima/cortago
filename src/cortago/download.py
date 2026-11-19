@@ -93,9 +93,10 @@ def _download(url: str, job_dir: Path, section: tuple[float, float | None] | Non
     )
 
 
-# Da gameplay basta um pedaço: pula a abertura e pega até 30 min (cada corte usa um ponto diferente dele).
+# Da gameplay basta um pedaço: pula a abertura e pega até 10 min (cada corte usa um ponto diferente dele).
+# Download de trecho passa pelo FFmpeg e anda perto do tempo real (~0,5 MB/s em 1080p): mais que isso só atrasa.
 GAMEPLAY_SKIP = 30.0
-GAMEPLAY_MAX_SECONDS = 1800.0
+GAMEPLAY_MAX_SECONDS = 600.0
 
 
 def gameplay_name(source: str) -> str:

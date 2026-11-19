@@ -1,3 +1,4 @@
+{% set rendering = clips | rejectattr("status", "equalto", "discarded") | selectattr("render_status", "in", ["pending", "rendering"]) | list %}
 <section id="job-panel"
   {% if job.status.running %}hx-get="/jobs/{{ job.id }}/panel" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
   <div class="card job-header">
@@ -17,8 +18,15 @@
       <span class="badge status-{{ job.status }}">
         {% if job.status.running %}<i class="spinner"></i>{% endif %}{{ STATUS_LABELS[job.status] }}
       </span>
+      {% if job.status.running or rendering %}
+        <button class="btn danger" hx-post="/jobs/{{ job.id }}/parar" hx-target="#job-panel" hx-swap="outerHTML"
+                title="Para o processamento e as renderizações na fila. Dá para continuar depois.">Parar</button>
+      {% endif %}
       {% if job.status == "error" %}
         <button class="btn" hx-post="/jobs/{{ job.id }}/retry" hx-target="#job-panel" hx-swap="outerHTML">Tentar de novo</button>
+      {% elif job.status == "cancelled" %}
+        <button class="btn primary" hx-post="/jobs/{{ job.id }}/retry" hx-target="#job-panel" hx-swap="outerHTML"
+                title="Retoma de onde parou (o que já foi feito é reaproveitado)">Continuar</button>
       {% endif %}
       {% if not job.status.running %}
         <button class="btn" hx-post="/jobs/{{ job.id }}/reselect" hx-target="#job-panel" hx-swap="outerHTML"

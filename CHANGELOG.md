@@ -26,6 +26,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
   indicação, alterna sozinho. Por corte: alternar em tela cheia, tela dividida (quem fala em cima) ou sem
   gameplay (aba Efeitos). Na timeline, uma linha mostra cada frase e troca com um clique. Padrão em
   `CORTAGO_GAMEPLAY_MODE`.
+- **Parar** em qualquer etapa: botão na página do vídeo (download, transcrição, escolha dos cortes, render) e no
+  player do corte (render). Para na hora: download e transcrição rodam num processo separado que é encerrado, o
+  FFmpeg é encerrado e a resposta do Claude é interrompida. O vídeo fica "Parado" e "Continuar" retoma de onde
+  parou; cortes interrompidos mostram "Parado" e são gerados de novo com "Renderizar de novo".
+- Gameplay de fundo: só os 10 primeiros minutos (depois da abertura) são baixados, em vez de 30 (download de
+  trecho anda perto do tempo real).
 - Arquivos de `/static` com versão no endereço: o navegador não usa mais JS/CSS antigo depois de atualizar.
 - Galeria de cortes na página do vídeo, com miniatura de cada corte (gerada no render, ou na primeira
   visita para cortes antigos).

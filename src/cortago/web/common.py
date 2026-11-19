@@ -36,6 +36,7 @@ STATUS_LABELS = {
     "rendering": "Renderizando",
     "done": "Pronto",
     "error": "Erro",
+    "cancelled": "Parado",
 }
 
 ZOOM_LABELS = {"none": "Sem zoom", "suave": "Suave", "forte": "Forte"}
@@ -80,6 +81,7 @@ templates.env.filters["time"] = timecode.format
 templates.env.filters["local"] = _local
 templates.env.globals.update(
     static=static_url,
+    STOPPED=pipeline.STOPPED,
     GAMEPLAY_MODES=gameplay.MODE_LABELS,
     STATUS_LABELS=STATUS_LABELS,
     LAYOUTS=render.LAYOUTS,

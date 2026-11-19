@@ -552,3 +552,28 @@ def test_timeline_gameplay_blocks_toggle(client, queued, timeline_job):
     assert db.job_clips(job.id)[0].edit["gameplay"] == [[30, 36]]
     bad = client.post(f"/clips/{clip.id}/timeline", json={"segments": [[10, 40]], "gameplay": "x"})
     assert bad.status_code == 400
+
+
+# ---------- parar ----------
+
+
+def test_stop_running_job_and_continue(client, queued, done_job):
+    job, clip = done_job
+    db.update_job(job.id, status=JobStatus.TRANSCRIBING)
+    assert "Parar" in client.get(f"/jobs/{job.id}").text
+    html = client.post(f"/jobs/{job.id}/parar").text
+    assert db.get_job(job.id).status == JobStatus.CANCELLED
+    assert "Parado" in html and "Continuar" in html
+    client.post(f"/jobs/{job.id}/retry")
+    assert queued["jobs"] == [(job.id, False)]
+
+
+def test_stop_clip_render_from_editor(client, queued, done_job):
+    job, clip = done_job
+    db.update_clip(clip.id, render_status=RenderStatus.RENDERING)
+    assert f'hx-post="/clips/{clip.id}/parar"' in client.get(f"/clips/{clip.id}").text
+    html = client.post(f"/clips/{clip.id}/parar").text
+    assert db.get_job(job.id).status == JobStatus.DONE  # o vídeo já estava pronto
+    assert db.job_clips(job.id)[0].render_error == pipeline.STOPPED
+    assert "Parado" in html and "Renderizar de novo" in html
+    assert "Parado" in client.get(f"/clips/{clip.id}/tile").text

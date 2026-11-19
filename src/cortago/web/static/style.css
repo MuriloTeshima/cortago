@@ -106,6 +106,7 @@ input[type="range"] { padding: 0; accent-color: var(--accent); }
 }
 .status-done { background: rgba(61, 220, 132, 0.12); color: var(--ok); }
 .status-error { background: rgba(255, 93, 93, 0.12); color: var(--danger); }
+.status-cancelled { background: var(--surface-2); color: var(--muted); }
 .status-queued, .status-downloading, .status-transcribing, .status-selecting, .status-rendering {
   background: rgba(255, 212, 0, 0.12); color: var(--accent);
 }

@@ -107,7 +107,8 @@ uv run cortago serve        # abre em http://127.0.0.1:8000
 1. Cole o link (ou o caminho de um arquivo), escolha quantos cortes, layout, idioma e duração. Em lives longas,
    informe o **trecho** (ex.: de `1:20:00` a `2:00:00`): só ele é baixado e transcrito. Opcionalmente, informe
    uma **gameplay de fundo** (veja abaixo).
-2. Acompanhe o processamento: download, transcrição, escolha dos cortes e render.
+2. Acompanhe o processamento: download, transcrição, escolha dos cortes e render. **Parar** interrompe na hora
+   em qualquer etapa; **Continuar** retoma de onde parou (o que já foi feito é reaproveitado).
 3. Os cortes aparecem numa **galeria** de miniaturas. "Escolher de novo" pede outra seleção ao Claude.
 4. Clique num corte para abrir o **editor**: player à esquerda (aprovar, descartar, baixar, renderizar de novo)
    e abas à direita, cada uma salva por conta própria e renderiza de novo só quando precisa:
@@ -200,7 +201,7 @@ gameplay entra sem som, cada corte num ponto diferente dela.
 - **Tela dividida:** quem fala em cima, gameplay embaixo e a legenda na emenda, o corte inteiro.
 
 O modo de cada corte fica na aba Efeitos, e na timeline dá para trocar frase a frase. Do link, só um pedaço de
-até 30 minutos é baixado (só imagem), uma vez, e reaproveitado entre vídeos (`data/gameplay/`). Use gameplay
+até 10 minutos é baixado (só imagem), uma vez, e reaproveitado entre vídeos (`data/gameplay/`). Use gameplay
 que você pode usar no canal (gravada por você ou com licença).
 
 ### Personalizar para o seu canal
@@ -257,6 +258,7 @@ commits, changelog) estão em [CLAUDE.md](CLAUDE.md) e o histórico de versões 
 | `post_info.py` | campos prontos para o YouTube (título, descrição, tags) |
 | `db.py` | modelos `Job` e `Clip` (SQLite via SQLModel) e migração automática |
 | `worker.py` | fila em segundo plano da interface (uma tarefa por vez) |
+| `cancel.py` | parar em qualquer etapa: processos encerráveis e pontos de verificação |
 | `web/` | FastAPI + templates Jinja/HTMX, sem build de frontend. Rotas em `web/routes/` (vídeos, cortes, timeline, biblioteca, mídia) |
 | `cli.py` | comandos `serve`, `run` e `doctor` |
 

@@ -66,4 +66,9 @@ Arquivos de cada job em `data/jobs/<id>/` (`source.*`, `transcript.json`, `clips
   (ajuste manual). Prioridade manual > Claude > alternância automática. A imagem só troca nas bordas de
   `gameplay.blocks` (frases) e o gancho fica em quem fala; `gameplay.to_output` passa os tempos pelos cortes de silêncio.
   A voz é sempre do vídeo principal.
+- Parar (`cancel.py`): o worker roda cada tarefa num escopo do job; `worker.stop` invalida os escopos existentes.
+  Pontos de parada: `cancel.check()` entre etapas, `cancel.run` (FFmpeg, no lugar de `subprocess.run`),
+  `cancel.call` (download e transcrição num processo separado, spawn) e o streaming do Claude. Na CLI não há
+  escopo e nada muda. Depois de parar, `pipeline.mark_stopped` deixa o job `CANCELLED` e os cortes pendentes
+  em erro com `pipeline.STOPPED`.
 - IDs usam AUTOINCREMENT: não reaproveitar IDs evita que o navegador mostre vídeo antigo do cache.

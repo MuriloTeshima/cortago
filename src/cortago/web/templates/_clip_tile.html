@@ -5,6 +5,8 @@
   <div class="tile-thumb">
     {% if clip.render_status == "done" %}
       <img src="/media/{{ job.id }}/{{ clip.id }}.jpg?v={{ clip.render_version }}" alt="" loading="lazy">
+    {% elif clip.render_status == "error" and clip.render_error == STOPPED %}
+      <div class="placeholder"><p>Parado</p></div>
     {% elif clip.render_status == "error" %}
       <div class="placeholder error"><p>Falha ao renderizar</p></div>
     {% elif clip.status == "discarded" %}
